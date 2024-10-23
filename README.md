@@ -67,13 +67,14 @@ Calibrated parameters saved to: ./output/dalec993_PFT+CLIM+SOIL+AGE_run_1.pickle
 Training this model for 199 iterations took about 5.5 hours on my personal laptop (i.e., MacBook Pro with 2 GHz Quad-Core Intel Core i5 CPU and 16GB Memory). It can be parallized on a HPC cluster for ensemble training.
 ## Compute Statistics and Analyze Results
 6. Compute test statistics and output .nc files of parameter maps and model output of simulated carbon and water fluxes. For instance, `python compute_r2.py -r 1 -p PFT+CLIM+SOIL+AGE`.
-7. Compute SHAP values by running the script compute_shap.sh.
+7. Compute SHAP values by running the script compute_shap.py (e.g. python compute_shap.py -r 1 -p PFT+CLIM+SOIL+AGE).
+8. Analyze the results using the jupyter notebooks provided in the `notebooks/` directory, or customize the code for your own applications. Note that you will need to download some additional datasets to run all the code in the notebooks. Details about which datasets we used are described in the manuscript. You may also need to adjust some path names for your own environment. 
 
 ## Reference
 Fang, J., Bowman, K., Zhao, W., Lian, X., Gentine, P. (2024). Differentiable Land Model Reveals Global Environmental Controls on Ecological Parameters. *Submitted*.
 
 ## Related projects:
-In addition to the global model, we also have a local DifferLand model suitable for site-level studies that can flexibly accommodate various machine learning based parameterizations. 
+In addition to the global model, we also have a [local DifferLand model](https://essopenarchive.org/users/747253/articles/1220863-exploring-optimal-complexity-for-water-stress-representation-in-terrestrial-carbon-models-a-hybrid-machine-learning-model-approach) suitable for site-level studies that can flexibly accommodate various machine learning based parameterizations. 
 
 
 
