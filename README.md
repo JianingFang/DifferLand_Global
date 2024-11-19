@@ -1,7 +1,7 @@
 # DifferLand (Global)
 By Jianing Fang (jf3423@columbia.edu), last revised Oct 22, 2024.
 
-This depository contains the source code for the DifferLand model described in the manuscript "*Differentiable Land Model Reveals Global Environmental Controls on Ecological Parameters*." This README file walks you through the process of installing and running the DifferLand package. 
+This depository contains the source code for the DifferLand model described in the manuscript "*Differentiable Land Model Reveals Global Environmental Controls on Latent Ecological Functions*." This README file walks you through the process of installing and running the DifferLand package. 
 
 ## Repository Structure
 - `DifferLand/`: the source code of the DifferLand model.
