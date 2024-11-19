@@ -71,7 +71,7 @@ Training this model for 199 iterations took about 5.5 hours on my personal lapto
 8. Analyze the results using the jupyter notebooks provided in the `notebooks/` directory, or customize the code for your own applications. Note that you will need to download some additional datasets to run all the code in the notebooks. Details about which datasets we used are described in the manuscript. You may also need to adjust some path names for your own environment. 
 
 ## Reference
-Fang, J., Bowman, K., Zhao, W., Lian, X., Gentine, P. (2024). Differentiable Land Model Reveals Global Environmental Controls on Ecological Parameters. *Submitted*.
+Fang, J., Bowman, K., Zhao, W., Lian, X., Gentine, P. (2024). Differentiable Land Model Reveals Global Environmental Controls on Latent Ecological Functions. *Submitted*.
 
 ## Related projects:
 In addition to the global model, we also have a [local DifferLand model](https://essopenarchive.org/users/747253/articles/1220863-exploring-optimal-complexity-for-water-stress-representation-in-terrestrial-carbon-models-a-hybrid-machine-learning-model-approach) suitable for site-level studies that can flexibly accommodate various machine learning based parameterizations. 
