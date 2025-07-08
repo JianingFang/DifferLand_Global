@@ -6,19 +6,27 @@ import jax.numpy as jnp
 import pandas as pd
 from datetime import date, timedelta
 from copy import deepcopy
+import jax
 
-def read_variable_to_vector(dir_name, nc_filename, var_name, not_nan_idx=None, shuffle_idx=None, binary_lat=False, time_idx=None):
-    if var_name == "LAT" and binary_lat:
-        if time_idx !=None:
-            arr = xr.open_dataset(os.path.join(dir_name, nc_filename))[var_name].values[time_idx, :, :].flatten()
+def read_variable_to_vector(dir_name, nc_filename, var_name, not_nan_idx=None, shuffle_idx=None, time_idx=None):
+    if var_name == "HEMISPHERE_BINARY":
+        if time_idx is not None:
+            arr = xr.open_dataset(os.path.join(dir_name, nc_filename))["LAT"].values[time_idx, :, :].flatten()
             arr[arr >= 0] = 1.0
             arr[arr < 0] = -1.0
         else:
-            arr = xr.open_dataset(os.path.join(dir_name, nc_filename))[var_name].values.flatten()
+            arr = xr.open_dataset(os.path.join(dir_name, nc_filename))["LAT"].values.flatten()
             arr[arr >= 0] = 1.0
             arr[arr < 0] = -1.0
-    else:
-        if time_idx != None:
+    elif var_name=="LAT_SIGMOID":
+        if time_idx is not None:
+            arr = xr.open_dataset(os.path.join(dir_name, nc_filename))["LAT"].values[time_idx, :, :].flatten()
+            arr = np.array(jax.nn.sigmoid(arr))
+        else:
+            arr = xr.open_dataset(os.path.join(dir_name, nc_filename))["LAT"].values.flatten()
+            arr = np.array(jax.nn.sigmoid(arr))
+    else:    
+        if time_idx is not None:
             arr = xr.open_dataset(os.path.join(dir_name, nc_filename))[var_name].values[time_idx, :, :].flatten()
         else:
             arr = np.array(xr.open_dataset(os.path.join(dir_name, nc_filename))[var_name].values.flatten())
@@ -31,7 +39,7 @@ def read_variable_to_vector(dir_name, nc_filename, var_name, not_nan_idx=None, s
     return arr
 
 def read_multiple_varible_to_array(dir_name, nc_filename, var_name_list):
-    return np.stack([read_variable_to_vector(dir_name, nc_filename, var_name, binary_lat=True) for var_name in var_name_list])  
+    return np.stack([read_variable_to_vector(dir_name, nc_filename, var_name) for var_name in var_name_list])  
 
 def read_single_variable_temporal_to_vector(dir_name, nc_filename, var_name, not_nan_idx, shuffle_idx):
     data_arr = xr.open_dataset(os.path.join(dir_name, nc_filename))[var_name].values
@@ -46,12 +54,12 @@ def build_temporal_mat_from_static(data_ar, n_t):
     return data_mat
 
 def read_multiple_variable_temporal_to_vector(dir_name, nc_filename, var_name_list, not_nan_idx,
-                                              shuffle_idx, n_t=108):
+                                              shuffle_idx, co2_filename= "co2_mm_gl_01_23.csv", n_t=108):
     data_list = []
     
     for var_name in var_name_list:
         if var_name == "CO2":
-            co2 = pd.read_csv(os.path.join(dir_name, "co2_mm_gl_10_23.csv")).average
+            co2 = pd.read_csv(os.path.join(dir_name, co2_filename)).average
             co2_ar = np.zeros((n_t, len(shuffle_idx)), dtype=np.float32)
             for i in range(n_t):
                 co2_ar[i, :]=co2[i]
@@ -71,8 +79,7 @@ def read_multiple_variable_temporal_to_vector(dir_name, nc_filename, var_name_li
         else:
             data_ar = read_single_variable_temporal_to_vector(dir_name, nc_filename,
                                                                      var_name, not_nan_idx, shuffle_idx)
-            data_list.append(read_single_variable_temporal_to_vector(dir_name, nc_filename,
-                                                                     var_name, not_nan_idx, shuffle_idx))
+            data_list.append(data_ar)
     return jnp.stack(data_list)
 
 
@@ -84,16 +91,48 @@ def nan_read_multiple_variable_temporal_to_vector(dir_name, nc_filename, var_nam
         if var_name == "som_const":
             data_vec = read_variable_to_vector(dir_name, nc_filename, "initial_som", not_nan_idx, shuffle_idx)
             data_ar = build_temporal_mat_from_static(data_vec, n_t)
+            data_ar_valid = np.invert(np.isnan(data_ar)).astype(np.float32)
         elif var_name == "biomass_yan":
             data_ar = read_single_variable_temporal_to_vector(dir_name, nc_filename, "agb_yan", not_nan_idx, shuffle_idx)
-            data_ar += read_single_variable_temporal_to_vector(dir_name, nc_filename, "bgb_yan", not_nan_idx, shuffle_idx)
+            data_ar += read_single_variable_temporal_to_vector(dir_name, nc_filename, "bgb_yan", not_nan_idx, shuffle_idx)  
+            data_ar_valid = np.invert(np.isnan(data_ar)).astype(np.float32)
+            
+        elif var_name == "biomass_ib":
+            data_ar = read_single_variable_temporal_to_vector(dir_name, nc_filename, "IB_AGC", not_nan_idx, shuffle_idx)
+            data_ar += read_single_variable_temporal_to_vector(dir_name, nc_filename, "IB_BGC", not_nan_idx, shuffle_idx)  
+            data_ar_valid = np.invert(np.isnan(data_ar)).astype(np.float32)
+        elif var_name == "gpp_fluxnet" or var_name == "reco_fluxnet" or var_name == "et_fluxnet":
+            fluxnet_weight = read_single_variable_temporal_to_vector(dir_name, nc_filename,
+                                                                     var_name+"_weight", not_nan_idx, shuffle_idx)
+            data_ar = read_single_variable_temporal_to_vector(dir_name, nc_filename, var_name, not_nan_idx, shuffle_idx)
+            data_ar_valid = np.invert(np.isnan(data_ar)).astype(np.float32)
+            data_ar_valid[fluxnet_weight>0] = fluxnet_weight[fluxnet_weight>0]
+        elif var_name == "gpp_fluxnet_10percent" or var_name == "reco_fluxnet_10percent" or var_name == "et_fluxnet_10percent":
+            fluxnet_weight = read_single_variable_temporal_to_vector(dir_name, nc_filename,
+                                                                     "_".join(var_name.split("_")[:-1])+"_weight_10percent",
+                                                                     not_nan_idx, shuffle_idx)
+            data_ar = read_single_variable_temporal_to_vector(dir_name, nc_filename, var_name, not_nan_idx, shuffle_idx)
+            data_ar_valid = np.invert(np.isnan(data_ar)).astype(np.float32)
+            data_ar_valid[fluxnet_weight>0] = fluxnet_weight[fluxnet_weight>0]
+        elif var_name == "gpp_fluxnet_50percent" or var_name == "reco_fluxnet_50percent" or var_name == "et_fluxnet_50percent":
+            fluxnet_weight = read_single_variable_temporal_to_vector(dir_name, nc_filename,
+                                                                     "_".join(var_name.split("_")[:-1])+"_weight_50percent",
+                                                                     not_nan_idx, shuffle_idx)
+            data_ar = read_single_variable_temporal_to_vector(dir_name, nc_filename, var_name, not_nan_idx, shuffle_idx)
+            data_ar_valid = np.invert(np.isnan(data_ar)).astype(np.float32)
+            data_ar_valid[fluxnet_weight>0] = fluxnet_weight[fluxnet_weight>0]
+        elif var_name == "none": # mask the output entirely when it is not used
+            data_ar = np.full((n_t, len(shuffle_idx)), np.nan, dtype=np.float32)
+            data_ar_valid = np.invert(np.isnan(data_ar)).astype(np.float32)
         else:
-            data_ar = read_single_variable_temporal_to_vector(dir_name, nc_filename,
-                                                                     var_name, not_nan_idx, shuffle_idx)
-        data_ar_valid = np.invert(np.isnan(data_ar)).astype(np.float32)
+            data_ar = read_single_variable_temporal_to_vector(dir_name, nc_filename, var_name, not_nan_idx, shuffle_idx)
+            data_ar_valid = np.invert(np.isnan(data_ar)).astype(np.float32)
         data_ar[np.isnan(data_ar)] = -9999
         data_list.append(data_ar)
         data_list.append(data_ar_valid)
+        print(var_name)
+        print(data_ar.shape)
+        print(data_ar_valid.shape)
     return jnp.stack(data_list)
 
 def generate_data_loader(data_matrix, idx_list, batch_size=320, zero_padding=True):
@@ -219,14 +258,3 @@ def generate_loader_random(data_matrix, batch_size=320):
         return [data_matrix[i*batch_size:(i+1)*batch_size, :, :] for i in range(data_matrix.shape[0] // batch_size)]
     else:
         return [data_matrix[i*batch_size:(i+1)*batch_size, :] for i in range(data_matrix.shape[0] // batch_size)]
-    
-def create_folder_if_not_exists(folder_path, verbose=False):
-    """Create a folder if the folder doesn't exist"""
-    if not os.path.exists(folder_path):
-        os.makedirs(folder_path)
-        if verbose:
-            print("Created folder: {}".format(folder_path))
-    else:
-        if verbose:
-                print("Folder path exists: {}".format(folder_path))
-    return

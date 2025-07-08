@@ -1,4 +1,22 @@
 import argparse
+import jax
+import jax.numpy as jnp
+from functools import partial
+import os
+import numpy as np
+import pandas as pd
+import pickle
+
+import sys
+sys.path.insert(1, '..')
+from DifferLand.util.preprocessing import read_variable_to_vector, read_multiple_varible_to_array
+from DifferLand.optimization.forward import embed_prediction_forward, parameter_prediction_forward
+from DifferLand.optimization.loss_functions import *
+
+from DifferLand.model.DALEC993 import DALEC993
+import xarray as xr
+import shap
+from DifferLand.util.preprocessing import create_folder_if_not_exists
 parser = argparse.ArgumentParser(
                     prog='Compute SHAP values for the spatilization network.',
                     description='JAX implementation of differentiable CARDAMOM!',
@@ -28,7 +46,7 @@ if args.verbose:
     print("Now start computing shap values...")
 
 def get_predictor_list(predictor_set):
-    predictor_list = ["LAT"]
+    predictor_list = ["LAT_SIGMOID"]
     if "PFT" in predictor_set:
         predictor_list += ["NF", "DBF", "EBF", "MF", "SH", "SAV", "GRA", "WET", "CRO", "NVG"]
     if "CLIM" in predictor_set:
@@ -77,24 +95,6 @@ if args.verbose:
         print("+ {}".format(p))
     
 
-import jax
-import jax.numpy as jnp
-from functools import partial
-import os
-import numpy as np
-import pandas as pd
-import pickle
-
-import sys
-sys.path.insert(1, '..')
-from DifferLand.util.preprocessing import read_variable_to_vector, read_multiple_varible_to_array
-from DifferLand.optimization.forward import embed_prediction_forward, parameter_prediction_forward
-from DifferLand.optimization.loss_functions import *
-
-from DifferLand.model.DALEC993 import DALEC993
-import xarray as xr
-import shap
-from DifferLand.util.preprocessing import create_folder_if_not_exists
 create_folder_if_not_exists(shap_dir, verbose=args.verbose)
 
 
@@ -136,17 +136,17 @@ model = DALEC993(water_stress_type="default")
 
 
 # read in spatial predictors values
-predictor_matrix = read_multiple_varible_to_array(data_dir, "differland_global_driver_v5.4.nc", predictor_list)
+predictor_matrix = read_multiple_varible_to_array(data_dir, "differland_global_driver_v6.nc", predictor_list)
 # get the CMS-Flux index
 
-RUN_SIMULATION_IDX = read_variable_to_vector(data_dir, "run_simulation_idx_v5.4.nc", "run_simulation_idx", time_idx=run-1)
+RUN_SIMULATION_IDX = read_variable_to_vector(data_dir, "run_simulation_idx_v6.nc", "run_simulation_idx", time_idx=run-1)
 
 
-VALID = read_variable_to_vector(data_dir, "era_valid_v5.4.nc", "era_valid")
+VALID = read_variable_to_vector(data_dir, "era_valid_v6.nc", "era_valid")
 
 INVALID = np.isnan(RUN_SIMULATION_IDX) | np.invert(VALID) | (RUN_SIMULATION_IDX < 0) # filter out TEST PIXELS
 predictor_matrix[:, INVALID] = np.nan
-ASSIMILATE_BULK_FLAG = read_variable_to_vector(data_dir, "assimilate_bulk_variable_v5.4.nc", "assimilate_bulk_variable")
+ASSIMILATE_BULK_FLAG = read_variable_to_vector(data_dir, "assimilate_bulk_variable_v6.nc", "assimilate_bulk_variable")
 
 # filter out nan pixles
 not_nan_idx = np.invert((np.sum(np.isnan(predictor_matrix), axis=0) > 0))

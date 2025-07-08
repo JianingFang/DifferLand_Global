@@ -1,4 +1,34 @@
 import argparse
+import jax
+import jax.numpy as jnp
+from functools import partial
+import os
+import numpy as np
+import pandas as pd
+import pickle
+import fastkde
+import sys
+from scipy.stats import linregress
+from sklearn.metrics import r2_score, mean_squared_error, mean_absolute_error
+import xarray as xr
+import json
+import matplotlib.pyplot as plt
+from matplotlib import rcParams
+from matplotlib.colors import LinearSegmentedColormap
+from copy import deepcopy
+import cartopy
+import cartopy.crs as ccrs
+from copy import deepcopy
+
+
+sys.path.insert(1, '..')
+from DifferLand.util.preprocessing import read_variable_to_vector, read_multiple_varible_to_array
+from DifferLand.util.preprocessing import nan_read_multiple_variable_temporal_to_vector
+from DifferLand.util.preprocessing import read_multiple_variable_temporal_to_vector
+from DifferLand.util.preprocessing import generate_data_loader, generate_input_loader
+from DifferLand.optimization.forward import embed_prediction_forward, parameter_prediction_forward
+from DifferLand.model.DALEC993 import DALEC993
+from DifferLand.util.preprocessing import create_folder_if_not_exists
 
 parser = argparse.ArgumentParser(
                     prog='Evaluate DifferLand Performance.',
@@ -29,7 +59,7 @@ if args.verbose:
     print("Now start post-processing DifferLand output...")
 
 def get_predictor_list(predictor_set):
-    predictor_list = ["LAT"]
+    predictor_list = ["LAT_SIGMOID"]
     if "PFT" in predictor_set:
         predictor_list += ["NF", "DBF", "EBF", "MF", "SH", "SAV", "GRA", "WET", "CRO", "NVG"]
     if "CLIM" in predictor_set:
@@ -72,37 +102,7 @@ if args.verbose:
     for p in predictor_list:
         print("+ {}".format(p))
 
-import jax
-import jax.numpy as jnp
-from functools import partial
-import os
-import numpy as np
-import pandas as pd
-import pickle
-import fastkde
-import sys
-from scipy.stats import linregress
-from sklearn.metrics import r2_score, mean_squared_error, mean_absolute_error
-import xarray as xr
-import json
-import matplotlib.pyplot as plt
-from matplotlib import rcParams
-from matplotlib.colors import LinearSegmentedColormap
-from copy import deepcopy
-import cartopy
-import cartopy.crs as ccrs
-from copy import deepcopy
 
-
-sys.path.insert(1, '..')
-from DifferLand.util.preprocessing import read_variable_to_vector, read_multiple_varible_to_array
-from DifferLand.util.preprocessing import nan_read_multiple_variable_temporal_to_vector
-from DifferLand.util.preprocessing import read_multiple_variable_temporal_to_vector
-from DifferLand.util.preprocessing import generate_data_loader, generate_input_loader
-from DifferLand.optimization.forward import embed_prediction_forward, parameter_prediction_forward
-from DifferLand.optimization.loss_functions import *
-from DifferLand.model.DALEC993 import DALEC993
-from DifferLand.util.preprocessing import create_folder_if_not_exists
 create_folder_if_not_exists(postanalysis_dir, verbose=args.verbose)
 create_folder_if_not_exists(fig_dir, verbose=args.verbose)
 create_folder_if_not_exists(nc_dir, verbose=args.verbose)
@@ -209,18 +209,18 @@ def nse_score(targets, predictions):
 if args.verbose:
     print("Loading datasets...")
 
-RUN_SIMULATION_IDX = read_variable_to_vector(data_dir, "run_simulation_idx_v5.4.nc", "run_simulation_idx", time_idx=run-1)
+RUN_SIMULATION_IDX = read_variable_to_vector(data_dir, "run_simulation_idx_v6.nc", "run_simulation_idx", time_idx=run-1)
     
-VALID = read_variable_to_vector(data_dir, "era_valid_v5.4.nc", "era_valid")
+VALID = read_variable_to_vector(data_dir, "era_valid_v6.nc", "era_valid")
 INVALID = np.isnan(RUN_SIMULATION_IDX) | np.invert(VALID) | (RUN_SIMULATION_IDX < 0) # filter out dev PIXELS
 TEST = np.invert(np.isnan(RUN_SIMULATION_IDX) | np.invert(VALID)) & (RUN_SIMULATION_IDX < 0)
     
-predictor_matrix = read_multiple_varible_to_array(data_dir, "differland_global_driver_v5.4.nc", predictor_list)
+predictor_matrix = read_multiple_varible_to_array(data_dir, "differland_global_driver_v6.nc", predictor_list)
 test_predictor_matrix = deepcopy(predictor_matrix)
 test_predictor_matrix[:, np.invert(TEST)] = np.nan
 
 predictor_matrix[:, INVALID] = np.nan
-ASSIMILATE_BULK_FLAG = read_variable_to_vector(data_dir, "assimilate_bulk_variable_v5.4.nc", "assimilate_bulk_variable")
+ASSIMILATE_BULK_FLAG = read_variable_to_vector(data_dir, "assimilate_bulk_variable_v6.nc", "assimilate_bulk_variable")
 
 # filter out nan pixles
 not_nan_idx = np.invert((np.sum(np.isnan(predictor_matrix), axis=0) > 0))
@@ -263,18 +263,18 @@ dev_matrix = jnp.array(scaled_predictor_matrix_dev, dtype=jnp.float32)
 test_matrix = jnp.array(scaled_predictor_matrix_test, dtype=jnp.float32)
 
 met_list = ["DAYS", "T_min", "T_max", "SOLR", "CO2", "DOY", "BURNED_AREA", "VPD", "PREC", "LAT", "DELTA_T", "MAT", "MAP"]
-met_matrix = read_multiple_variable_temporal_to_vector(data_dir, "differland_global_driver_v5.4.nc", met_list, not_nan_idx, shuffle_idx, n_t=NT)
+met_matrix = read_multiple_variable_temporal_to_vector(data_dir, "differland_global_driver_v6.nc", met_list, not_nan_idx, shuffle_idx, n_t=NT)
 met_matrix = jnp.transpose(met_matrix, axes=[2, 1, 0])
 met_matrix_train = jnp.array(met_matrix[sorted_valid_idx <= train_dev_idx, :], dtype=jnp.float32)
 met_matrix_dev = jnp.array(met_matrix[sorted_valid_idx > train_dev_idx, :], dtype=jnp.float32)
 
-test_met_matrix = read_multiple_variable_temporal_to_vector(data_dir, "differland_global_driver_v5.4.nc", met_list, test_not_nan_idx, test_shuffle_idx, n_t=NT)
+test_met_matrix = read_multiple_variable_temporal_to_vector(data_dir, "differland_global_driver_v6.nc", met_list, test_not_nan_idx, test_shuffle_idx, n_t=NT)
 met_matrix_test = jnp.array(jnp.transpose(test_met_matrix, axes=[2, 1, 0]), dtype=jnp.float32)
 
 output_list = ["SIF", "NBE", "LAI", "LWE_normalized", "agb_yan", "fire_emission", "som_const", "VOD", "gpp_fluxnet", "reco_fluxnet", "et_fluxnet", "ET"]
 
     
-output_matrix = nan_read_multiple_variable_temporal_to_vector(data_dir, "differland_global_driver_v5.4.nc", output_list, not_nan_idx, shuffle_idx, n_t=NT)
+output_matrix = nan_read_multiple_variable_temporal_to_vector(data_dir, "differland_global_driver_v6.nc", output_list, not_nan_idx, shuffle_idx, n_t=NT)
 output_matrix = jnp.transpose(output_matrix, axes=[2, 1, 0])
 
 output_matrix=output_matrix.at[np.invert(ASSIMILATE_SHUFFLE_FLAG), :, 2].set(-9999)
@@ -284,7 +284,7 @@ output_matrix=output_matrix.at[np.invert(ASSIMILATE_SHUFFLE_FLAG), :, 7].set(0)
 output_matrix_train = jnp.array(output_matrix[sorted_valid_idx <= train_dev_idx, :], dtype=jnp.float32)
 output_matrix_dev = jnp.array(output_matrix[sorted_valid_idx > train_dev_idx, :], dtype=jnp.float32)
 
-output_matrix_test = nan_read_multiple_variable_temporal_to_vector(data_dir, "differland_global_driver_v5.4.nc", output_list, test_not_nan_idx, test_shuffle_idx, n_t=NT)
+output_matrix_test = nan_read_multiple_variable_temporal_to_vector(data_dir, "differland_global_driver_v6.nc", output_list, test_not_nan_idx, test_shuffle_idx, n_t=NT)
 output_matrix_test = jnp.transpose(output_matrix_test, axes=[2, 1, 0])
 output_matrix_test=output_matrix_test.at[np.invert(TEST_ASSIMILATE_SHUFFLE_FLAG), :, 2].set(-9999)
 output_matrix_test=output_matrix_test.at[np.invert(TEST_ASSIMILATE_SHUFFLE_FLAG), :, 3].set(0)
@@ -703,10 +703,10 @@ if args.versbose:
     print("Model performance figures saved to {}".format(fig_dir))
 
 # read in spatial predictors
-predictor_matrix_all = read_multiple_varible_to_array(data_dir, "differland_global_driver_v5.4.nc", predictor_list)
+predictor_matrix_all = read_multiple_varible_to_array(data_dir, "differland_global_driver_v6.nc", predictor_list)
 # get the CMS-Flux index
-RUN_SIMULATION_IDX = read_variable_to_vector(data_dir, "run_simulation_idx_v5.4.nc", "run_simulation_idx", time_idx=run-1)
-VALID = read_variable_to_vector(data_dir, "era_valid_v5.4.nc", "era_valid")
+RUN_SIMULATION_IDX = read_variable_to_vector(data_dir, "run_simulation_idx_v6.nc", "run_simulation_idx", time_idx=run-1)
+VALID = read_variable_to_vector(data_dir, "era_valid_v6.nc", "era_valid")
 INVALID = np.isnan(RUN_SIMULATION_IDX) | np.invert(VALID)
 predictor_matrix_all[:, INVALID] = np.nan
 
@@ -714,7 +714,7 @@ scaled_predictor_matrix_all = (predictor_matrix_all.T - np.mean(predictor_matrix
 all_matrix = jnp.array(scaled_predictor_matrix_all, dtype=jnp.float32)
 
 met_list = ["DAYS", "T_min", "T_max", "SOLR", "CO2", "DOY", "BURNED_AREA", "VPD", "PREC", "LAT", "DELTA_T", "MAT", "MAP"]
-met_matrix_all = read_multiple_variable_temporal_to_vector(data_dir, "differland_global_driver_v5.4.nc", met_list, np.full(predictor_matrix_all.shape[1], True), np.arange(0, predictor_matrix_all.shape[1]), n_t=NT)
+met_matrix_all = read_multiple_variable_temporal_to_vector(data_dir, "differland_global_driver_v6.nc", met_list, np.full(predictor_matrix_all.shape[1], True), np.arange(0, predictor_matrix_all.shape[1]), n_t=NT)
 met_matrix_all = jnp.transpose(met_matrix_all, axes=[2, 1, 0])
 
 
@@ -856,7 +856,7 @@ def lag_linregress_3D(x, y, lagx=0, lagy=0):
     return cov,cor,slope,intercept,pval,stderr
 
 
-observed_lai_da = xr.open_dataset(os.path.join(data_dir, "differland_global_driver_v5.4.nc"))["LAI"][warm_up:, :, :]
+observed_lai_da = xr.open_dataset(os.path.join(data_dir, "differland_global_driver_v6.nc"))["LAI"][warm_up:, :, :]
 predicted_lai_da = xr.DataArray(predicted_all[:, :, warm_up:, model.pfn.lai].transpose([2,0,1]), coords={"time":observed_lai_da.time,
                                                                                 "lat":np.linspace(89.875, -89.875, 720), 
                                         "lon":np.linspace(-179.875, 179.875, 1440)})
@@ -864,7 +864,7 @@ predicted_lai_da = xr.DataArray(predicted_all[:, :, warm_up:, model.pfn.lai].tra
 cov_lai, cor_lai, slope_lai, intercept_lai, pval_lai, stderr_lai = lag_linregress_3D(predicted_lai_da, observed_lai_da)
 
 
-observed_vod_da = xr.open_dataset(os.path.join(data_dir, "differland_global_driver_v5.4.nc"))["VOD"][warm_up:, :, :]
+observed_vod_da = xr.open_dataset(os.path.join(data_dir, "differland_global_driver_v6.nc"))["VOD"][warm_up:, :, :]
 predicted_vod_da = xr.DataArray(predicted_all[:, :, warm_up:, model.pfn.vod].transpose([2,0,1]), coords={"time":observed_vod_da.time,
                                                                                 "lat":np.linspace(89.875, -89.875, 720), 
                                         "lon":np.linspace(-179.875, 179.875, 1440)})
@@ -872,14 +872,14 @@ predicted_vod_da = xr.DataArray(predicted_all[:, :, warm_up:, model.pfn.vod].tra
 cov_vod, cor_vod, slope_vod, intercept_vod, pval_vod, stderr_vod = lag_linregress_3D(predicted_vod_da, observed_vod_da)
 
 
-observed_sif_da = xr.open_dataset(os.path.join(data_dir, "differland_global_driver_v5.4.nc"))["SIF"][warm_up:, :, :]
+observed_sif_da = xr.open_dataset(os.path.join(data_dir, "differland_global_driver_v6.nc"))["SIF"][warm_up:, :, :]
 predicted_sif_da = xr.DataArray(predicted_all[:, :, warm_up:, model.pfn.SIF].transpose([2,0,1]), coords={"time":observed_sif_da.time,
                                                                                 "lat":np.linspace(89.875, -89.875, 720), 
                                         "lon":np.linspace(-179.875, 179.875, 1440)})
 
 cov_sif, cor_sif, slope_sif, intercept_sif, pval_sif, stderr_sif = lag_linregress_3D(predicted_sif_da, observed_sif_da)
 
-observed_et_da = xr.open_dataset(os.path.join(data_dir, "differland_global_driver_v5.4.nc"))["ET"][warm_up:, :, :]
+observed_et_da = xr.open_dataset(os.path.join(data_dir, "differland_global_driver_v6.nc"))["ET"][warm_up:, :, :]
 
 predicted_et_vals = np.array(predicted_all[:, :, warm_up:, model.pfn.ET].transpose([2,0,1]))
 for i in range(NT):
@@ -892,14 +892,14 @@ predicted_et_da = xr.DataArray(predicted_et_vals, coords={"time":observed_et_da.
 cov_et, cor_et, slope_et, intercept_et, pval_et, stderr_et = lag_linregress_3D(predicted_et_da, observed_et_da)
 
 
-observed_nbe_da = xr.open_dataset(os.path.join(data_dir, "differland_global_driver_v5.4.nc"))["NBE"][warm_up:, :, :]
+observed_nbe_da = xr.open_dataset(os.path.join(data_dir, "differland_global_driver_v6.nc"))["NBE"][warm_up:, :, :]
 predicted_nbe_da = xr.DataArray(predicted_all[:, :, warm_up:, model.pfn.nee].transpose([2,0,1]), coords={"time":observed_nbe_da.time,
                                                                                 "lat":np.linspace(89.875, -89.875, 720), 
                                         "lon":np.linspace(-179.875, 179.875, 1440)})
 
 cov_nbe, cor_nbe, slope_nbe, intercept_nbe, pval_nbe, stderr_nbe = lag_linregress_3D(predicted_nbe_da, observed_nbe_da)
 
-observed_ewt_da = xr.open_dataset(os.path.join(data_dir, "differland_global_driver_v5.4.nc"))["LWE_normalized"][warm_up:, :, :]
+observed_ewt_da = xr.open_dataset(os.path.join(data_dir, "differland_global_driver_v6.nc"))["LWE_normalized"][warm_up:, :, :]
 predicted_ewt_da = xr.DataArray(predicted_all[:, :, warm_up:, model.pfn.next_water_pool].transpose([2,0,1]), coords={"time":observed_ewt_da.time,
                                                                                 "lat":np.linspace(89.875, -89.875, 720), 
                                         "lon":np.linspace(-179.875, 179.875, 1440)})
