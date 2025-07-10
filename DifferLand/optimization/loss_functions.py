@@ -136,7 +136,7 @@ def compute_edc_loss(
         - respiration_hetero_som
         - som_fire_combust
         - next_labile_pool
-        - next_leaf_pool
+        - next_foliar_pool
         - next_root_pool
         - next_wood_pool
         - next_litter_pool
@@ -239,7 +239,7 @@ def compute_edc_loss(
     initial_som = initial_pools_sample[:, 5]
 
     mean_labile_jan = jnp.mean(result[:, 11::12, pfn.next_labile_pool], axis=1)
-    mean_leaf_jan = jnp.mean(result[:, 11::12, pfn.next_leaf_pool], axis=1)
+    mean_leaf_jan = jnp.mean(result[:, 11::12, pfn.next_foliar_pool], axis=1)
     mean_wood_jan = jnp.mean(result[:, 11::12, pfn.next_wood_pool], axis=1)
     mean_root_jan = jnp.mean(result[:, 11::12, pfn.next_root_pool], axis=1)
     mean_litter_jan = jnp.mean(result[:, 11::12, pfn.next_litter_pool], axis=1)

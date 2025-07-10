@@ -65,20 +65,23 @@ class DALEC993(DALECBase):
 
     def __post_init__(self):
         self.parmin = DALEC_993_parinfo.dalec993_parmin
-        self.pheno_parmax = DALEC_993_parinfo.dalec993_parmax
+        self.parmax = DALEC_993_parinfo.dalec993_parmax
+        
+        self.pheno_parmin = DALEC_993_parinfo.dalec993_pheno_parmin
+        self.pheno_parmax = DALEC_993_parinfo.dalec993_pheno_parmax
+        
         self.param_parmin = DALEC_993_parinfo.dalec993_param_parmin
         self.param_parmax = DALEC_993_parinfo.dalec993_param_parmax
-        self.pfn = DALEC_993_parinfo.dalec993_pfn
+        
+        self.pool_parmin = DALEC_993_parinfo.dalec993_pool_parmin
         self.pool_parmax = DALEC_993_parinfo.dalec993_pool_parmax
-        self.pool_parmin = DALEC_993_parinfo.dalec993_param_parmin
-        self.pheno_parmax = DALEC_993_parinfo.dalec993_pheno_parmax
-        self.pheno_parmin = DALEC_993_parinfo.dalec993_pheno_parmin
+        
+        self.pfn = DALEC_993_parinfo.dalec993_pfn
         self.internal_nn_forward = parameter_prediction_forward
         self.id = 993
         self.n_output = len(self.pfn)
         self.n_pool = len(self.pool_parmax)
 
-    @partial(jax.jit, static_argnums=(0,))
     def step(
         self,
         pools: jnp.ndarray,
@@ -706,8 +709,7 @@ class DALEC993(DALECBase):
         )
 
         return new_pools, new_output
-
-    @partial(jax.jit, static_argnums=(0,))
+    
     def unnormalize_water(self, normalized_parameters: jnp.ndarray) -> jnp.ndarray:
         """
         Map water-related parameters from unconstrained real space to their physical range.
@@ -746,11 +748,9 @@ class DALEC993(DALECBase):
                 ]
             ),
         )
-
-    @partial(jax.jit, static_argnums=(0,))
-    def unnormalize_pheno(self, normalized_pools: jnp.ndarray) -> jnp.ndarray:
+    def unnormalize_pools(self, normalized_pools: jnp.ndarray) -> jnp.ndarray:
         """
-        Map phenology parameters from unconstrained real space to their physical range.
+        Map pool parameters from unconstrained real space to their physical range.
 
         This method transforms phenology parameters, which may exist in an unconstrained
         real-valued space, back into their bounded physical range defined by model-specific
@@ -759,17 +759,17 @@ class DALEC993(DALECBase):
         Parameters
         ----------
         normalized_pools : jnp.ndarray
-            Array of phenology parameters in real-valued space (not yet constrained
+            Array of pool parameters in real-valued space (not yet constrained
             to the physical parameter bounds).
 
         Returns
         -------
         jnp.ndarray
-            Array of phenology parameters transformed into the physical range defined
+            Array of pool parameters transformed into the physical range defined
             between `pheno_parmin` and `pheno_parmax`.
         """
         return unnormalize_parameters(
             normalized_pools,
-            param_parmin=self.pheno_parmin,
-            param_parmax=self.pheno_parmax,
+            param_parmin=self.pool_parmin,
+            param_parmax=self.pool_parmax,
         )

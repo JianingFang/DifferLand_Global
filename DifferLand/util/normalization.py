@@ -114,10 +114,10 @@ def par2nor(
 
 
 def unnormalize_parameters(
-    normalized_parameters: Union[float, Array],
-    param_parmin: Union[float, Array],
-    param_parmax: Union[float, Array],
-) -> Union[float, Array]:
+    normalized_parameters: Array,
+    param_parmin: Array,
+    param_parmax: Array,
+) -> Array:
     """
     Convert normalized parameters back to physical values.
 
@@ -126,16 +126,16 @@ def unnormalize_parameters(
 
     Parameters
     ----------
-    normalized_parameters : float or Array
+    normalized_parameters : Array
         Normalized parameter(s) in (−∞, ∞).
-    param_parmin : float or Array
+    param_parmin : Array
         Minimum physical bound(s) for the parameters.
-    param_parmax : float or Array
+    param_parmax : Array
         Maximum physical bound(s) for the parameters.
 
     Returns
     -------
-    parameters : float or Array
+    parameters : Array
         Physical parameter values in their bounded ranges.
     """
     return nor2par(normalized_parameters, param_parmin, param_parmax)

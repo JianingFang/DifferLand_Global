@@ -7,6 +7,7 @@ import pandas as pd
 from datetime import date, timedelta
 from copy import deepcopy
 import jax
+from typing import Optional
 
 def read_variable_to_vector(dir_name, nc_filename, var_name, not_nan_idx=None, shuffle_idx=None, time_idx=None):
     if var_name == "HEMISPHERE_BINARY":
@@ -258,3 +259,34 @@ def generate_loader_random(data_matrix, batch_size=320):
         return [data_matrix[i*batch_size:(i+1)*batch_size, :, :] for i in range(data_matrix.shape[0] // batch_size)]
     else:
         return [data_matrix[i*batch_size:(i+1)*batch_size, :] for i in range(data_matrix.shape[0] // batch_size)]
+    
+    
+def create_folder_if_not_exists(folder_path: str,
+                                verbose: Optional[bool]=False
+    ):
+    """
+    Create a folder if it does not already exist.
+
+    Checks whether the specified folder path exists. If not, the folder
+    is created. Optionally prints information about the operation.
+
+    Parameters
+    ----------
+    folder_path : str
+        Path to the folder to create.
+    verbose : bool, optional
+        If True, print messages indicating whether the folder was created
+        or already existed. Default is False.
+
+    Returns
+    -------
+    None
+    """
+    if not os.path.exists(folder_path):
+        os.makedirs(folder_path)
+        if verbose:
+            print("Created folder: {}".format(folder_path))
+    else:
+        if verbose:
+            print("Folder path exists: {}".format(folder_path))
+    return

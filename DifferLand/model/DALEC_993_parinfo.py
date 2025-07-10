@@ -80,9 +80,9 @@ DALEC993Outputs = namedtuple("DALEC993Outputs", ["lai", "gpp", "ET", "temperate"
     "respiration_hetero_som", "litter_to_som", "runoff", "labile_fire_combust", "foliar_fire_combust", "root_fire_combust",
     "wood_fire_combust", "litter_fire_combust", "som_fire_combust", "labile_fire_transfer", "foliar_fire_transfer",
     "root_fire_transfer", "wood_fire_transfer", "litter_fire_transfer", "total_fire_combust", 
-    "nee", "next_labile_pool", "next_foliar_pool",
+    "nee", "nbe", "next_labile_pool", "next_foliar_pool",
     "next_root_pool", "next_wood_pool", "next_litter_pool", "next_som_pool", "next_water_pool", "beta", "SIF", "violation", "vod"])
 
 
-dalec993_pfn = DALEC993Outputs(*jnp.arange(43))
+dalec993_pfn = DALEC993Outputs(*jnp.arange(44))
 

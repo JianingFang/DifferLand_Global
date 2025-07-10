@@ -3,7 +3,6 @@ from DifferLand.util.normalization import unnormalize_parameters
 from functools import partial
 import jax
 
-
 @dataclass
 class DALECBase:
     """
@@ -75,12 +74,11 @@ class DALECBase:
             If the method is not implemented in a derived class.
         """
         raise NotImplementedError
-    
-    @partial(jax.jit, static_argnums=(0,))
+
     def unnormalize(self, normalized_parameters):
         return unnormalize_parameters(normalized_parameters, param_parmin=self.param_parmin, param_parmax=self.param_parmax)
     
-    @partial(jax.jit, static_argnums=(0,))
+    
     def unnormalize_pheno(self, normalized_pools):
         return unnormalize_parameters(normalized_pools, param_parmin=self.pheno_parmin, param_parmax=self.pheno_parmax)
     

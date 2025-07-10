@@ -9,6 +9,8 @@ import logging
 import pickle
 import argparse
 import sys
+sys.path.insert(1, '..')
+
 from tqdm import tqdm
 
 from DifferLand.util.preprocessing import (
@@ -47,7 +49,7 @@ parser.add_argument("-n", "--neurons", default=32)
 parser.add_argument("-x", "--hidden_layers", default=3)
 parser.add_argument("-i", "--iterations", default=199, type=int)
 parser.add_argument("-l", "--learning_rate", default=5e-5)
-parser.add_argument("-t", "--number_of_timesteps", default=168, type=int)
+parser.add_argument("-t", "--number_of_timesteps", default=23*12, type=int)
 parser.add_argument(
     "-v", "--verbose", action=argparse.BooleanOptionalAction, default=True
 )
@@ -107,12 +109,17 @@ sys.path.insert(1, "../")
 
 
 # define directories for accessing data and storing outputs
-data_dir = "../data/"
-output_dir = "./output/"
-log_dir = "./log/"
+CARDAMOM_DRIVER_DATA_DIR = "/burg/glab/users/jf3423/data/CARDAMOM_driver_data"
+DATA_DIR = os.path.join(CARDAMOM_DRIVER_DATA_DIR, "global/")
+CO2_FILENAME = "co2_mm_gl_01_23.csv"
+DIFFERLAND_DRIVER_NAME = "combined_global_initial_v6.nc"
 
-create_folder_if_not_exists(output_dir, verbose=args.verbose)
-create_folder_if_not_exists(log_dir, verbose=args.verbose)
+#DATA_DIR = "../data/"
+OUTPUT_DIR = "./output/"
+LOG_DIR = "./log/"
+
+create_folder_if_not_exists(OUTPUT_DIR, verbose=args.verbose)
+create_folder_if_not_exists(LOG_DIR, verbose=args.verbose)
 
 
 def forward(params, predictors, met, model):
@@ -140,7 +147,7 @@ def forward(params, predictors, met, model):
         initial_pools,
         met,
     )
-    return all_fluxes
+    return initial_pools, all_fluxes
 
 
 def get_predictor_list(predictor_set):
@@ -198,21 +205,21 @@ if args.verbose:
     print("Reading in datasets for model training...")
 # read in spatial predictors
 predictor_matrix = read_multiple_varible_to_array(
-    data_dir, "differland_global_driver_v6.nc", predictor_list
+    DATA_DIR, DIFFERLAND_DRIVER_NAME, predictor_list
 )
 # get the CMS-Flux index
 RUN_SIMULATION_IDX = read_variable_to_vector(
-    data_dir, "run_simulation_idx_v6.nc", "run_simulation_idx", time_idx=run - 1
+    DATA_DIR, "run_simulation_idx_v6.nc", "run_simulation_idx", time_idx=run - 1
 )
 
-VALID = read_variable_to_vector(data_dir, "era_valid_v6.nc", "era_valid")
+VALID = read_variable_to_vector(DATA_DIR, "era_valid_v6.nc", "era_valid")
 
 INVALID = (
     np.isnan(RUN_SIMULATION_IDX) | np.invert(VALID) | (RUN_SIMULATION_IDX < 0)
 )  # filter out TEST PIXELS
 predictor_matrix[:, INVALID] = np.nan
 ASSIMILATE_BULK_FLAG = read_variable_to_vector(
-    data_dir, "assimilate_bulk_variable_v6.nc", "assimilate_bulk_variable"
+    DATA_DIR, "assimilate_bulk_variable_v6.nc", "assimilate_bulk_variable"
 )
 
 # filter out nan pixles
@@ -265,12 +272,12 @@ met_list = [
     "MAP",
 ]
 met_matrix = read_multiple_variable_temporal_to_vector(
-    data_dir,
-    "differland_global_driver_v6.nc",
+    DATA_DIR,
+    DIFFERLAND_DRIVER_NAME,
     met_list,
     not_nan_idx,
     shuffle_idx,
-    co2_filename="co2_mm_gl_10_23.csv",
+    co2_filename=CO2_FILENAME,
     n_t=NT,
 )
 met_matrix = jnp.transpose(met_matrix, axes=[2, 1, 0])
@@ -283,8 +290,8 @@ met_matrix_test = jnp.array(
 
 
 output_matrix = nan_read_multiple_variable_temporal_to_vector(
-    data_dir,
-    "differland_global_driver_v6.nc",
+    DATA_DIR,
+    DIFFERLAND_DRIVER_NAME,
     output_list,
     not_nan_idx,
     shuffle_idx,
@@ -326,42 +333,6 @@ if args.verbose:
 if args.verbose:
     print("Initializing model parameters...")
 
-embedded_param_state = init_mlp_params(
-    [len(predictor_list) - 1]
-    + [
-        NEURONS,
-    ]
-    * HIDDEN_LAYERS,
-    n=np.random.randint(99999999),
-)
-
-dalec_param_state = init_mlp_params(
-    [NEURONS, len(model.param_parmin)], n=np.random.randint(99999999)
-)
-
-initial_param_state = init_mlp_params(
-    [NEURONS, len(model.pool_parmin)], n=np.random.randint(99999999)
-)
-
-pheno_param_state = init_mlp_params(
-    [NEURONS + 1, len(model.pheno_parmin)], n=np.random.randint(99999999)
-)
-
-param_state = (
-    embedded_param_state,
-    dalec_param_state,
-    initial_param_state,
-    pheno_param_state,
-)
-
-loss_fn = partial(loss_fn_with_edc, batch_forward=batch_forward, pfn=model.pfn)
-
-
-loss_grad_fn = jax.jit(jax.value_and_grad(jax.jit(loss_fn)))
-tx = optax.adam(learning_rate=LEARNING_RATE)
-opt_state = tx.init(param_state)
-
-
 @jax.jit
 def update(params, predictors, met, labels, opt_state):
     loss, grads = loss_grad_fn(params, predictors, met, labels)
@@ -372,35 +343,77 @@ def update(params, predictors, met, labels, opt_state):
 
 logging.basicConfig(
     level=logging.INFO,
-    filename="./{}/{}.log".format(log_dir, exp_str),
+    filename="./{}/{}.log".format(LOG_DIR, exp_str),
     format="%(asctime)s %(message)s",
     datefmt="%m/%d/%Y %I:%M:%S %p",
 )
-if args.verbose:
-    print("Training start!")
-
-for j in tqdm(range(1, TOTAL_ITER)):
-    batch_loss = 0
-    for PREDICTORS, MET, LABELS in zip(train_X, train_MET, train_Y):
-        loss, param_state, opt_state = update(
-            param_state, PREDICTORS, MET, LABELS, opt_state
-        )
-        batch_loss += loss
-    logging.info("batch {}, loss: {:.2f}".format(j, batch_loss))
-    if j % 10 == 0:
-        test_loss = 0
-        for PREDICTORS, MET, LABELS in zip(test_X, test_MET, test_Y):
-            test_loss_batch = loss_fn(param_state, PREDICTORS, MET, LABELS)
-            test_loss += test_loss_batch
-        logging.info("VALIDATION LOSS {:.2f}".format(test_loss))
-
-with open(os.path.join(output_dir, exp_str + ".pickle"), "wb") as fp:
-    pickle.dump(param_state, fp)
 
 if args.verbose:
     print("Training complete!")
     print(
         "Calibrated parameters saved to: {}".format(
-            os.path.join("./{}/".format(output_dir), exp_str + ".pickle")
+            os.path.join("./{}/".format(OUTPUT_DIR), exp_str + ".pickle")
         )
     )
+    
+loss_fn = partial(loss_fn_with_edc, batch_forward=batch_forward, pfn=model.pfn)
+
+loss_grad_fn = jax.jit(jax.value_and_grad(jax.jit(loss_fn)))
+
+tx = optax.adam(learning_rate=LEARNING_RATE)
+
+if args.verbose:
+    print("Training start!")
+
+valid_loss = False
+while not valid_loss:
+    embedded_param_state = init_mlp_params([len(predictor_list)-1] + [NEURONS,] * HIDDEN_LAYERS, n=np.random.randint(99999999))
+
+    dalec_param_state = init_mlp_params([NEURONS, len(model.param_parmin)], n=np.random.randint(99999999))
+
+    initial_param_state = init_mlp_params([NEURONS, len(model.pool_parmin)], n=np.random.randint(99999999))
+
+    pheno_param_state = init_mlp_params([NEURONS+1, len(model.pheno_parmin)], n=np.random.randint(99999999))
+
+    param_state = (embedded_param_state, dalec_param_state, initial_param_state, pheno_param_state)
+
+    opt_state = tx.init(param_state)
+    
+    logging.info("Parameter state initialized!")
+    
+    for j in range(1, TOTAL_ITER):
+        
+        batch_loss = 0
+        for (PREDICTORS, MET, LABELS) in zip(train_X, train_MET, train_Y):
+            loss, param_state, opt_state = update(param_state, PREDICTORS, MET, LABELS, opt_state)
+            batch_loss += loss
+        logging.info("batch {}, loss: {:.2f}".format(j, batch_loss))
+        if np.isnan(batch_loss):
+            logging.info("Nan found in training, reinitializing parameters!")
+            valid_loss = False
+            break
+        else:
+            valid_loss = True
+        if j % 10 == 0:
+            test_loss = 0
+            for (PREDICTORS, MET, LABELS) in zip(test_X, test_MET, test_Y):
+                test_loss_batch = loss_fn(param_state, PREDICTORS, MET, LABELS)
+                test_loss += test_loss_batch
+            logging.info("VALIDATION LOSS {:.2f}".format(test_loss)) 
+            
+            with open(os.path.join("./{}/".format(OUTPUT_DIR), exp_str+"_checkpoint-{}.pickle".format(j)), "wb") as fp:
+                pickle.dump(param_state, fp)
+                
+            if args.verbose:
+                print("Saved training checkpoint to {}".format(os.path.join("./{}/".format(OUTPUT_DIR), exp_str+"_checkpoint-{}.pickle".format(j))))
+                 
+
+    with open(os.path.join("./{}/".format(OUTPUT_DIR), exp_str+".pickle"), "wb") as fp:
+        pickle.dump(param_state, fp)
+        
+    if args.verbose:
+        print("Training complete.")
+        print("Calibrated parameters saved to: {}".format(
+                            os.path.join("./{}/".format(OUTPUT_DIR), exp_str + ".pickle")
+                        )
+                    )
