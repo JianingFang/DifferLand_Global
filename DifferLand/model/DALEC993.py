@@ -635,14 +635,8 @@ class DALEC993(DALECBase):
             + litter_fire_combust
             + som_fire_combust
         )
-
-        nee = (
-            -gpp
-            + respiration_auto
-            + respiration_hetero_litter
-            + respiration_hetero_som
-            + total_fire_combust
-        )
+        nee = -gpp + respiration_auto + respiration_hetero_litter + respiration_hetero_som
+        nbe = nee + total_fire_combust
 
         vod = p_fol * next_foliar_pool + p_wood * next_wood_pool
 
@@ -693,6 +687,7 @@ class DALEC993(DALECBase):
                     litter_fire_transfer,
                     total_fire_combust,
                     nee,
+                    nbe,
                     next_labile_pool,
                     next_foliar_pool,
                     next_root_pool,
