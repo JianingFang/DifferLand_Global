@@ -131,9 +131,6 @@ def nan_read_multiple_variable_temporal_to_vector(dir_name, nc_filename, var_nam
         data_ar[np.isnan(data_ar)] = -9999
         data_list.append(data_ar)
         data_list.append(data_ar_valid)
-        print(var_name)
-        print(data_ar.shape)
-        print(data_ar_valid.shape)
     return jnp.stack(data_list)
 
 def generate_data_loader(data_matrix, idx_list, batch_size=320, zero_padding=True):

@@ -104,10 +104,6 @@ if args.run < 1 or args.run > 100:
     exit()
 run = args.run
 
-# import the DifferLand modules
-sys.path.insert(1, "../")
-
-
 # define directories for accessing data and storing outputs
 CARDAMOM_DRIVER_DATA_DIR = "/burg/glab/users/jf3423/data/CARDAMOM_driver_data"
 DATA_DIR = os.path.join(CARDAMOM_DRIVER_DATA_DIR, "global/")
@@ -406,7 +402,8 @@ while not valid_loss:
                 pickle.dump(param_state, fp)
                 
             if args.verbose:
-                print("Saved training checkpoint to {}".format(os.path.join("./{}/".format(OUTPUT_DIR), exp_str+"_checkpoint-{}.pickle".format(j))))
+                print("Saved training checkpoint to {}".format(os.path.join("./{}/".format(OUTPUT_DIR),
+                                                                            exp_str+"_checkpoint-{}.pickle".format(j))))
                  
 
     with open(os.path.join("./{}/".format(OUTPUT_DIR), exp_str+".pickle"), "wb") as fp:
