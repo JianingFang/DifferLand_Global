@@ -37,7 +37,6 @@ parser.add_argument('-r', '--run', help="Enter an index for the run, used to ide
 parser.add_argument('-p', '--predictors', required=True)
 parser.add_argument('-n', '--neurons', default=32)
 parser.add_argument('-x', '--hidden_layers', default=3)
-parser.add_argument('-i', '--iterations', default=199, type=int)
 parser.add_argument('-l', '--learning_rate', default=5e-5)
 parser.add_argument('-t', '--number_of_timesteps', default=168, type=int)
 parser.add_argument("-v", "--verbose", action=argparse.BooleanOptionalAction, default=True)
@@ -77,7 +76,6 @@ def get_predictor_list(predictor_set):
 
 HIDDEN_LAYERS = args.hidden_layers
 NEURONS = args.neurons
-TOTAL_ITER = args.iterations + 1
 LEARNING_RATE = args.learning_rate
 NT = args.number_of_timesteps
 predictor_list = get_predictor_list(args.predictors)
@@ -93,7 +91,6 @@ exp_str = "dalec993_{}_run_{}".format(args.predictors,
 if args.verbose:
     print("Number of hidden layers in the embeeding NN: {}".format(HIDDEN_LAYERS))
     print("Number of neurons in each NN layer: {}".format(NEURONS))
-    print("Total number of training iterations: {}".format(TOTAL_ITER-1))
     print("Learning rate: {}".format(LEARNING_RATE))
     print("Number of timesteps: {}".format(NT))
     print("Spatial predictors:")
