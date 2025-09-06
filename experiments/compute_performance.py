@@ -38,7 +38,7 @@ parser.add_argument('-p', '--predictors', required=True)
 parser.add_argument('-n', '--neurons', default=32)
 parser.add_argument('-x', '--hidden_layers', default=3)
 parser.add_argument('-l', '--learning_rate', default=5e-5)
-parser.add_argument('-t', '--number_of_timesteps', default=168, type=int)
+parser.add_argument('-t', '--number_of_timesteps', default=23*12, type=int)
 parser.add_argument("-v", "--verbose", action=argparse.BooleanOptionalAction, default=True)
 
 output_dir = "./output/"
