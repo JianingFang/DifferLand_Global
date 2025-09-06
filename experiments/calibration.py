@@ -177,7 +177,8 @@ def get_predictor_list(predictor_set):
         predictor_list += ["null"]
         if len(predictor_list) == 1:
             print(
-                "Error: invalid predictor list. The predictor list must contain one or more from the set {PFT, CLIM, SOIL, AGE}, or it must be either LATLON or CONTROL."
+                "Error: invalid predictor list. The predictor list must contain one or more from" \
+                    "the set {PFT, CLIM, SOIL, AGE}, or it must be either LATLON or CONTROL."
             )
             exit()
     return predictor_list
@@ -381,7 +382,7 @@ while not valid_loss:
     
     logging.info("Parameter state initialized!")
     
-    for j in range(1, TOTAL_ITER):
+    for j in tqdm(range(1, TOTAL_ITER)):
         
         batch_loss = 0
         for (PREDICTORS, MET, LABELS) in zip(train_X, train_MET, train_Y):

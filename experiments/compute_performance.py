@@ -4,7 +4,6 @@ import jax.numpy as jnp
 from functools import partial
 import os
 import numpy as np
-import pandas as pd
 import pickle
 import fastkde
 import sys
@@ -18,7 +17,6 @@ from matplotlib.colors import LinearSegmentedColormap
 from copy import deepcopy
 import cartopy
 import cartopy.crs as ccrs
-from copy import deepcopy
 
 
 sys.path.insert(1, '..')
