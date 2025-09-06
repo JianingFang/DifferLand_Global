@@ -11,7 +11,7 @@ This depository contains the source code for the DifferLand model described in t
 
 ## Installation
 1. Create a new conda environment and active the environment  
-`conda create --name DifferLand python=3.9`  
+`conda create --name DifferLand python=3.12`  
 `conda activate DifferLand`
 2. Install the packages that DifferLand depends on:  
 `conda install -c conda-forge jax numpy xarray pandas shap netCDF4 matplotlib cartopy scikit-learn`  
