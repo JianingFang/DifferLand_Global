@@ -652,13 +652,15 @@ def compute_metrics(label, predicted, var_name, result_dict):
         if np.sum(s_sel) > 0:
             spatial_rmse_list.append(root_mean_squared_error(label[i, :][s_sel], predicted[i, :][s_sel]))
 
-    result_dict[var_name+ "_spatial_mean_temporal_nse"]=np.nanmean(spatial_r2_list)
-    result_dict[var_name+ "_spatial_median_temporal_nse"]=np.nanmedian(spatial_r2_list)
-    result_dict[var_name+ "_spatial_std_temporal_nse"]=np.nanstd(spatial_r2_list)
-    
-    result_dict[var_name+ "_spatial_mean_temporal_rmse"]=np.nanmean(spatial_rmse_list)
-    result_dict[var_name+ "_spatial_median_temporal_rmse"]=np.nanmedian(spatial_rmse_list)
-    result_dict[var_name+ "_spatial_std_temporal_rmse"]=np.nanstd(spatial_rmse_list)
+    with warnings.catch_warnings():
+        warnings.simplefilter("ignore", category=RuntimeWarning)
+        result_dict[var_name+ "_spatial_mean_temporal_nse"]=np.nanmean(spatial_r2_list)
+        result_dict[var_name+ "_spatial_median_temporal_nse"]=np.nanmedian(spatial_r2_list)
+        result_dict[var_name+ "_spatial_std_temporal_nse"]=np.nanstd(spatial_r2_list)
+        
+        result_dict[var_name+ "_spatial_mean_temporal_rmse"]=np.nanmean(spatial_rmse_list)
+        result_dict[var_name+ "_spatial_median_temporal_rmse"]=np.nanmedian(spatial_rmse_list)
+        result_dict[var_name+ "_spatial_std_temporal_rmse"]=np.nanstd(spatial_rmse_list)
   
     return result_dict
 
@@ -844,7 +846,7 @@ evaluate_performance(predicted_matrix_test[:, warm_up:, model.pfn.ET].flatten(),
 evaluate_performance(fire_predicted_test.flatten(), fire_label_test.flatten(),  ax[7], 0, 2.5, "Fire C Emission (gC m$^{-2}$ day #$^{-1}$)")
 plt.savefig(os.path.join(FIG_DIR, "{}_test.png".format(exp_str)))
 
-if args.versbose:
+if args.verbose:
     print("Model performance figures saved to {}".format(FIG_DIR))
 
 # read in spatial predictors
