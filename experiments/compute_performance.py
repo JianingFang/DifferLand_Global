@@ -5,7 +5,6 @@ from functools import partial
 import os
 import numpy as np
 import pickle
-import fastkde
 import sys
 from scipy.stats import linregress
 from sklearn.metrics import r2_score, mean_squared_error, mean_absolute_error, root_mean_squared_error
@@ -13,10 +12,7 @@ import xarray as xr
 import json
 import matplotlib.pyplot as plt
 from matplotlib import rcParams
-from matplotlib.colors import LinearSegmentedColormap
 from copy import deepcopy
-import cartopy
-import cartopy.crs as ccrs
 
 
 sys.path.insert(1, '..')
@@ -40,7 +36,16 @@ parser.add_argument('-x', '--hidden_layers', default=3)
 parser.add_argument('-l', '--learning_rate', default=5e-5)
 parser.add_argument('-t', '--number_of_timesteps', default=23*12, type=int)
 parser.add_argument("-v", "--verbose", action=argparse.BooleanOptionalAction, default=True)
+parser.add_argument("-w", "--warmup", default=12*2)
 
+# sensitivity experiment setupts
+parser.add_argument('-f', '--fluxnet', default="true")
+parser.add_argument('-a', '--lai', default="LAI")
+parser.add_argument('-b', '--biomass', default="biomass_yan")
+parser.add_argument('-v', '--vod', default="none")
+parser.add_argument('-d', '--fire_emission', default="GFED_FIRE_EMISSION")
+parser.add_argument('-g', '--nbe', default="NBE")
+parser.add_argument('-t', '--suffix', default="")
 
 # define directories for accessing data and storing outputs
 CARDAMOM_DRIVER_DATA_DIR = "/burg-archive/glab/users/jf3423/data/CARDAMOM_driver_data/"
@@ -85,6 +90,7 @@ HIDDEN_LAYERS = args.hidden_layers
 NEURONS = args.neurons
 LEARNING_RATE = args.learning_rate
 NT = args.number_of_timesteps
+warm_up = args.warm_up
 predictor_list = get_predictor_list(args.predictors)
 if args.run < 1 or args.run > 100:
     print("Error: RUN_IDX must be an integer between 1 and 100 inclusive.")
@@ -93,10 +99,6 @@ run = args.run
 
 exp_str = "dalec993_{}_run_{}".format(args.predictors,
                                 run)
-warm_up= 2 *12
-
-
-
 if args.verbose:
     print("Number of hidden layers in the embeeding NN: {}".format(HIDDEN_LAYERS))
     print("Number of neurons in each NN layer: {}".format(NEURONS))
@@ -207,19 +209,13 @@ def nan_filtered_r2_score(targets, predictions):
     else:
         return np.nan
 
-def nan_filtered_mean_squared_error(targets, predictions, squared=True):
-    sel = np.invert(np.isnan(targets) | np.isnan(predictions))
-    if np.sum(sel) > 0:
-        return mean_squared_error(targets[sel], predictions[sel], squared=squared)
-    else:
-        return np.nan
-    
 def nan_filtered_mean_absolute_error(targets, predictions):
     sel = np.invert(np.isnan(targets) | np.isnan(predictions))
     if np.sum(sel) > 0:
         return mean_absolute_error(targets[sel], predictions[sel])
     else:
         return np.nan
+    
     
 def nse_score(targets, predictions):
     return 1-(np.sum((targets-predictions)**2)/np.sum((targets-np.mean(targets))**2))
@@ -230,12 +226,7 @@ def nan_filtered_root_mean_squared_error(y_true, y_pred):
         return root_mean_squared_error(y_true[sel], y_pred[sel])
     else:
         return np.nan
-def nan_filtered_r2_score(targets, predictions):
-    sel = np.invert(np.isnan(targets) | np.isnan(predictions))
-    if np.sum(sel) > 0:
-        return r2_score(targets[sel], predictions[sel])
-    else:
-        return np.nan
+
 
 def nan_filtered_trend(y_pred):
     #print(y_pred.shape)
@@ -246,6 +237,7 @@ def nan_filtered_trend(y_pred):
         return linregress(time_x[sel], y_pred[sel]).slope
     else:
         return np.nan
+    
     
 def nan_filtered_trend_p(y_pred):
     time_x = np.arange(len(y_pred))
@@ -945,7 +937,7 @@ ds.to_netcdf(os.path.join(NC_DIR, "{}_params.nc".format(exp_str)))
 if args.versbose:
     print("Maps of ecological parameters saved to {}".format(os.path.join(NC_DIR, "{}_params.nc".format(exp_str))))
 predicted_all = batch_forward(param_state, all_matrix, met_matrix_all)  
-predicted_all = predicted_all.reshape(720, 1440, 12*23, 44)
+predicted_all = predicted_all.reshape(720, 1440, args.number_of_timesteps, 44)
 
 def lag_linregress_3D(x, y, lagx=0, lagy=0):
     """
@@ -1004,7 +996,7 @@ def lag_linregress_3D(x, y, lagx=0, lagy=0):
     return cov,cor,slope,intercept,pval,stderr
 
 
-observed_lai_da = xr.open_dataset(os.path.join(CARDAMOM_DRIVER_DATA_DIR, "combined_global_initial_v6.nc"))["LAI"][warm_up:, :, :]
+observed_lai_da = xr.open_dataset(os.path.join(CARDAMOM_DRIVER_DATA_DIR, DIFFERLAND_DRIVER_NAME))["LAI"][warm_up:, :, :]
 predicted_lai_da = xr.DataArray(predicted_all[:, :, warm_up:, model.pfn.lai].transpose([2,0,1]), coords={"time":observed_lai_da.time,
                                                                                 "lat":np.linspace(89.875, -89.875, 720), 
                                         "lon":np.linspace(-179.875, 179.875, 1440)})
@@ -1021,7 +1013,7 @@ predicted_lai_anom_da = detrend_then_remove_msc(predicted_lai_da)
 cov_lai_anom, cor_lai_anom, slope_lai_anom, intercept_lai_anom, pval_lai_anom, stderr_lai_anom = lag_linregress_3D(predicted_lai_anom_da, observed_lai_anom_da)
 
 
-observed_sif_da = xr.open_dataset(os.path.join(CARDAMOM_DRIVER_DATA_DIR, "combined_global_initial_v6.nc"))["SIF"][warm_up:, :, :]
+observed_sif_da = xr.open_dataset(os.path.join(CARDAMOM_DRIVER_DATA_DIR, DIFFERLAND_DRIVER_NAME))["SIF"][warm_up:, :, :]
 predicted_sif_da = xr.DataArray(predicted_all[:, :, warm_up:, model.pfn.SIF].transpose([2,0,1]), coords={"time":observed_sif_da.time,
                                                                                 "lat":np.linspace(89.875, -89.875, 720), 
                                         "lon":np.linspace(-179.875, 179.875, 1440)})
@@ -1036,7 +1028,7 @@ observed_sif_anom_da = detrend_then_remove_msc(observed_sif_da)
 predicted_sif_anom_da = detrend_then_remove_msc(predicted_sif_da)
 cov_sif_anom, cor_sif_anom, slope_sif_anom, intercept_sif_anom, pval_sif_anom, stderr_sif_anom = lag_linregress_3D(predicted_sif_anom_da, observed_sif_anom_da)
 
-observed_et_da = xr.open_dataset(os.path.join(CARDAMOM_DRIVER_DATA_DIR, "combined_global_initial_v6.nc"))["ET"][warm_up:, :, :]
+observed_et_da = xr.open_dataset(os.path.join(CARDAMOM_DRIVER_DATA_DIR, DIFFERLAND_DRIVER_NAME))["ET"][warm_up:, :, :]
 
 predicted_et_da = xr.DataArray(predicted_all[:, :, warm_up:, model.pfn.ET].transpose([2,0,1]), coords={"time":observed_et_da.time,
                                                                                 "lat":np.linspace(89.875, -89.875, 720), 
@@ -1062,7 +1054,7 @@ def coarsen_numpy(x, block_h=16, block_w=20):
     x_up = np.repeat(np.repeat(x_coarse, block_h, axis=1), block_w, axis=2)  # (n, 720, 1440)
     return x_up
 
-observed_nbe_da = xr.open_dataset(os.path.join(CARDAMOM_DRIVER_DATA_DIR, "combined_global_initial_v6.nc"))["NBE"][warm_up:, :, :]
+observed_nbe_da = xr.open_dataset(os.path.join(CARDAMOM_DRIVER_DATA_DIR, DIFFERLAND_DRIVER_NAME))["NBE"][warm_up:, :, :]
 observed_nbe_da.values = coarsen_numpy(observed_nbe_da.values)
 predicted_nbe_da = xr.DataArray(predicted_all[:, :, warm_up:, model.pfn.nbe].transpose([2,0,1]), coords={"time":observed_nbe_da.time,
                                                                                 "lat":np.linspace(89.875, -89.875, 720), 
@@ -1076,7 +1068,7 @@ predicted_nbe_annual_da = predicted_nbe_da.resample({'time': '1Y'}).mean()
 cov_nbe, cor_nbe, slope_nbe, intercept_nbe, pval_nbe, stderr_nbe = lag_linregress_3D(predicted_nbe_da, observed_nbe_da)
 cov_nbe_annual, cor_nbe_annual, slope_nbe_annual, intercept_nbe_annual, pval_nbe_annual, stderr_nbe_annual = lag_linregress_3D(predicted_nbe_annual_da, observed_nbe_annual_da)
 
-observed_ewt_da = xr.open_dataset(os.path.join(CARDAMOM_DRIVER_DATA_DIR, "combined_global_initial_v6.nc"))["LWE_normalized"][warm_up:, :, :]
+observed_ewt_da = xr.open_dataset(os.path.join(CARDAMOM_DRIVER_DATA_DIR, DIFFERLAND_DRIVER_NAME))["LWE_normalized"][warm_up:, :, :]
 predicted_ewt_da = xr.DataArray(predicted_all[:, :, warm_up:, model.pfn.next_water_pool].transpose([2,0,1]), coords={"time":observed_ewt_da.time,
                                                                                 "lat":np.linspace(89.875, -89.875, 720), 
                                         "lon":np.linspace(-179.875, 179.875, 1440)})
@@ -1089,9 +1081,11 @@ cov_ewt, cor_ewt, slope_ewt, intercept_ewt, pval_ewt, stderr_ewt = lag_linregres
 cov_ewt_annual, cor_ewt_annual, slope_ewt_annual, intercept_ewt_annual, pval_ewt_annual, stderr_ewt_annual = lag_linregress_3D(predicted_ewt_annual_da, observed_ewt_annual_da)
 
 if args.biomass == "biomass_ib":
-    observed_biomass_da = xr.open_dataset(os.path.join(GLOBAL_DATA_DIR, "combined_global_initial_v6.nc"))["IB_AGC"][warm_up:, :, :] + xr.open_dataset(os.path.join(GLOBAL_DATA_DIR, "combined_global_initial_v6.nc"))["IB_BGC"][warm_up:, :, :]
+    observed_biomass_da = xr.open_dataset(os.path.join(CARDAMOM_DRIVER_DATA_DIR, DIFFERLAND_DRIVER_NAME))["IB_AGC"][warm_up:, :, :] 
+    + xr.open_dataset(os.path.join(CARDAMOM_DRIVER_DATA_DIR, DIFFERLAND_DRIVER_NAME))["IB_BGC"][warm_up:, :, :]
 else:
-    observed_biomass_da = xr.open_dataset(os.path.join(GLOBAL_DATA_DIR, "combined_global_initial_v6.nc"))["agb_yan"][warm_up:, :, :] + xr.open_dataset(os.path.join(GLOBAL_DATA_DIR, "combined_global_initial_v6.nc"))["bgb_yan"][warm_up:, :, :]
+    observed_biomass_da = xr.open_dataset(os.path.join(CARDAMOM_DRIVER_DATA_DIR, DIFFERLAND_DRIVER_NAME))["agb_yan"][warm_up:, :, :] 
+    + xr.open_dataset(os.path.join(CARDAMOM_DRIVER_DATA_DIR, DIFFERLAND_DRIVER_NAME))["bgb_yan"][warm_up:, :, :]
 
 predicted_biomass_da = xr.DataArray((predicted_all[:, :, warm_up:, model.pfn.next_foliar_pool]+predicted_all[:, :, warm_up:, model.pfn.next_wood_pool]+predicted_all[:, :, warm_up:, model.pfn.next_labile_pool]+predicted_all[:, :, warm_up:, model.pfn.next_root_pool]).transpose([2,0,1]), coords={"time":observed_biomass_da.time,
                                                                                 "lat":np.linspace(89.875, -89.875, 720), 
