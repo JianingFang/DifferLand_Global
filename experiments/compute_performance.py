@@ -72,7 +72,7 @@ output_list = [
 ]
 
 # define directories for accessing data and storing outputs
-CARDAMOM_DRIVER_DATA_DIR = "/burg-archive/glab/users/jf3423/data/CARDAMOM_driver_data/"
+CARDAMOM_DRIVER_DATA_DIR = "/burg-archive/glab/users/jf3423/data/CARDAMOM_driver_data/global/"
 #CARDAMOM_DRIVER_DATA_DIR = "../data/"
 CO2_FILENAME = "co2_mm_gl_01_23.csv"
 DIFFERLAND_DRIVER_NAME = "combined_global_initial_v6.nc"
