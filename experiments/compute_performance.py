@@ -7,7 +7,7 @@ import numpy as np
 import pickle
 import sys
 from scipy.stats import linregress
-from sklearn.metrics import r2_score, mean_squared_error, mean_absolute_error, root_mean_squared_error
+from sklearn.metrics import r2_score, mean_absolute_error, root_mean_squared_error
 import xarray as xr
 import json
 import matplotlib.pyplot as plt
@@ -39,13 +39,37 @@ parser.add_argument("-v", "--verbose", action=argparse.BooleanOptionalAction, de
 parser.add_argument("-w", "--warmup", default=12*2)
 
 # sensitivity experiment setupts
-parser.add_argument('-f', '--fluxnet', default="true")
-parser.add_argument('-a', '--lai', default="LAI")
-parser.add_argument('-b', '--biomass', default="biomass_yan")
-parser.add_argument('-v', '--vod', default="none")
-parser.add_argument('-d', '--fire_emission', default="GFED_FIRE_EMISSION")
-parser.add_argument('-g', '--nbe', default="NBE")
-parser.add_argument('-t', '--suffix', default="")
+##### Define the target variables to be assimilated into the framework #####
+
+SIF_PROXY_TARGET = "LCSPP"  # Ootions: LCSPP: "LCSPP" |  Not Assimilated: "none"
+NBE_INVERSION_TARGET = (
+    "NBE"  # options: CMS-Flux: "NBE" | CAMS: "CAMS_NBE" | Not Assimilated: "none"
+)
+SATELLITE_LAI_TARGET = "LAI"  # options: MODIS LAI: "LAI" | COPERNICUS LAI: "LAI_COPERNICUS" | Not Assimilated: "none"
+GRACE_LWE_TARGET = "LWE_normalized"  # options: GRACE EWT Anomaly: LWE_normalized | Not Assimilated: "none"
+BIOMASS_TARGET = "biomass_yan"  # options: Annual biomass from Xu et al. 2021 (Sci Adv. ): "biomass_yan" | IB-AGC VOD Derived Annual Biomass Li et al. 2025 Sci. Data): "biomass_ib" | Not Assimilated: "none"
+FIRE_EMISSION_TARGET = "GFED_FIRE_EMISSION" # options: GFED Fire C Emission "GFED_FIRE_EMISSION" | CMS Based Fire Emission Inversion: fire_emission  | Not Assimilated: "none"
+STATIC_SOIL_TARGET = "som_const" # options: Harmonized World Soil Database (used for the entire period): "som_const" | Not Assimilated: "none"
+VOD_TARGET = "none" # options: Not Assimilated: "none" | 
+GPP_FLUXNET_TARGET = "gpp_fluxnet" # options: sites whose reported PFT >25% of the containing grid cell : "gpp_fluxnet" | >10%: "gpp_fluxnet_10percent" | >50%: "gpp_fluxnet_50percent" | Not Assimilated: "none"
+RECO_FLUXNET_TARGET ="reco_fluxnet" # options: sites whose reported PFT >25% of the containing grid cell : "reco_fluxnet" | >10%: "reco_fluxnet_10percent" | >50%: "reco_fluxnet_50percent" | Not Assimilated: "none"
+ET_FLUXNET_TARGET ="et_fluxnet" # options: sites whose reported PFT >25% of the containing grid cell : "et_fluxnet" | >10%: "et_fluxnet_10percent" | >50%: "et_fluxnet_50percent" | Not Assimilated: "none"
+GLEAM_ET_TARGET = "ET" # options: GLEAM ET: "ET" | Not Assimilated: "none"
+
+output_list = [
+    SIF_PROXY_TARGET,
+    NBE_INVERSION_TARGET,
+    SATELLITE_LAI_TARGET,
+    GRACE_LWE_TARGET,
+    BIOMASS_TARGET,
+    FIRE_EMISSION_TARGET,
+    STATIC_SOIL_TARGET,
+    VOD_TARGET,
+    GPP_FLUXNET_TARGET,
+    RECO_FLUXNET_TARGET,
+    ET_FLUXNET_TARGET,
+    GLEAM_ET_TARGET,
+]
 
 # define directories for accessing data and storing outputs
 CARDAMOM_DRIVER_DATA_DIR = "/burg-archive/glab/users/jf3423/data/CARDAMOM_driver_data/"
@@ -376,25 +400,6 @@ met_matrix_dev = jnp.array(met_matrix[sorted_valid_idx > train_dev_idx, :], dtyp
 
 test_met_matrix = read_multiple_variable_temporal_to_vector(CARDAMOM_DRIVER_DATA_DIR, "combined_global_driver_v6.nc", met_list, test_not_nan_idx, test_shuffle_idx, n_t=NT)
 met_matrix_test = jnp.array(jnp.transpose(test_met_matrix, axes=[2, 1, 0]), dtype=jnp.float32)
-if args.fluxnet == "true":
-    gpp_varname = "gpp_fluxnet"
-    reco_varname = "reco_fluxnet"
-    et_varname = "et_fluxnet"
-elif args.fluxnet == "10percent":
-    gpp_varname = "gpp_fluxnet_10percent"
-    reco_varname = "reco_fluxnet_10percent"
-    et_varname = "et_fluxnet_10percent"
-elif args.fluxnet == "50percent":
-    gpp_varname = "gpp_fluxnet_50percent"
-    reco_varname = "reco_fluxnet_50percent"
-    et_varname = "et_fluxnet_50percent"
-elif args.fluxnet == "false":
-    gpp_varname = "none"
-    reco_varname = "none"
-    et_varname = "none"    
-    
-output_list = ["LCSPP", args.nbe, args.lai, "LWE_normalized", args.biomass, args.fire_emission, "som_const", args.vod, gpp_varname, reco_varname, et_varname, "ET"]
-
     
 output_matrix = nan_read_multiple_variable_temporal_to_vector(CARDAMOM_DRIVER_DATA_DIR, "combined_global_driver_v6.nc", output_list, not_nan_idx, shuffle_idx, n_t=NT)
 output_matrix = jnp.transpose(output_matrix, axes=[2, 1, 0])
@@ -772,9 +777,6 @@ def evaluate_performance(predicted, true, ax, axis_min, axis_max, title_name=Non
 
         ax.set_box_aspect(1)
         ax.set_title(title_name, fontsize=14)
-        #ax.text(0.1, 0.85, IGBP_name,
-        #    verticalalignment='bottom', horizontalalignment='left',
-        #    transform=ax.transAxes, fontsize=14)
         ax.tick_params(direction="in")
         metric_dict=dict()
         metric_dict["r2"]=nan_filtered_r2_score(true, predicted)
