@@ -1,6 +1,5 @@
 import jax.numpy as jnp
 import jax
-from functools import partial
 from DifferLand.model.auxi.phenology import leaf_fall_factor, lab_release_factor
 from DifferLand.model.auxi.ACM import ACM
 from DifferLand.model import DALEC_993_parinfo

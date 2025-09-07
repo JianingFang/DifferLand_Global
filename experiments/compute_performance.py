@@ -16,7 +16,6 @@ from matplotlib import rcParams
 from copy import deepcopy
 
 
-
 sys.path.insert(1, "..")
 from DifferLand.util.preprocessing import (
     read_variable_to_vector,
@@ -46,6 +45,9 @@ parser.add_argument(
     type=int,
     required=True,
 )
+parser.add_argument("-p", "--predictors", required=True)
+parser.add_argument("-t", "--number_of_timesteps", default=23 * 12, type=int)
+
 parser.add_argument(
     "-v", "--verbose", action=argparse.BooleanOptionalAction, default=True
 )
@@ -134,8 +136,8 @@ def get_predictor_list(predictor_set):
         predictor_list += ["null"]
         if len(predictor_list) == 1:
             print(
-                "Error: invalid predictor list. The predictor list must contain one or more from the set"\
-                    "{PFT, CLIM, SOIL, AGE}, or it must be either LATLON or CONTROL."
+                "Error: invalid predictor list. The predictor list must contain one or more from the set"
+                "{PFT, CLIM, SOIL, AGE}, or it must be either LATLON or CONTROL."
             )
             exit()
     return predictor_list
@@ -415,6 +417,7 @@ def lag_linregress_3D(x, y, lagx=0, lagy=0):
 
     return cov, cor, slope, intercept, pval, stderr
 
+
 def weighted_mean_over_batch(x_px_t, w_px_t, axis=0):
     """
     Weighted mean over the **batch/pixel** axis.
@@ -529,7 +532,8 @@ def process_split(param_state, X, Y, MET, warm_up, model, water_thr=0.7):
         np.stack(fire_pred),
         np.stack(fire_lab),
     )
-    
+
+
 # ---------- AGB computations & annual aggregation (pixels-first) ----------
 
 
@@ -577,6 +581,7 @@ def annualize_mask(mask_px_t):
         return jnp.nan
     return safe_prod(mask_px_t.reshape(n_px, -1, 12), axis=2)
 
+
 def compute_metrics(label, predicted, var_name, result_dict):
     invalid = np.isnan(label) | np.isnan(predicted) | (label == -9999)
     label[invalid] = np.nan
@@ -610,7 +615,6 @@ def compute_metrics(label, predicted, var_name, result_dict):
         result_dict[var_name + "_flat_pval"] = np.nan
         result_dict[var_name + "_flat_stderr"] = np.nan
         result_dict[var_name + "_flat_intercept_stderr"] = np.nan
-
 
     label_spatial = safe_mean(label, axis=1)
     predicted_spatial = safe_mean(predicted, axis=1)
@@ -676,6 +680,7 @@ def compute_metrics(label, predicted, var_name, result_dict):
         )
 
     return result_dict
+
 
 def plot_performance(predicted, true, ax, axis_min, axis_max, title_name=None):
     sel = np.invert(np.isnan(true) | np.isnan(predicted) | (true == -9999))
@@ -774,7 +779,6 @@ def coarsen_numpy(x, block_h=16, block_w=20):
         np.repeat(x_coarse, block_h, axis=1), block_w, axis=2
     )  # (n, 720, 1440)
     return x_up
-
 
 
 model = DALEC993(water_stress_type="default")
@@ -2184,7 +2188,7 @@ metrics_ds["trend_p_biomass"] = trend_p_biomass.expand_dims(
     axis=0,
 )
 
-metrics_ds.to_netcdf(os.path.join("./postanalysis/nc/", "{}_cor.nc".format(exp_str)))
+metrics_ds.to_netcdf(os.path.join(NC_DIR, "{}_cor.nc".format(exp_str)))
 
 if args.versbose:
     print(
