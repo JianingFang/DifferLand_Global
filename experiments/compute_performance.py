@@ -36,7 +36,7 @@ parser.add_argument('-x', '--hidden_layers', default=3)
 parser.add_argument('-l', '--learning_rate', default=5e-5)
 parser.add_argument('-t', '--number_of_timesteps', default=23*12, type=int)
 parser.add_argument("-v", "--verbose", action=argparse.BooleanOptionalAction, default=True)
-parser.add_argument("-w", "--warmup", default=12*2)
+parser.add_argument("-w", "--warm_up", default=12*2)
 
 # sensitivity experiment setupts
 ##### Define the target variables to be assimilated into the framework #####
