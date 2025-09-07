@@ -345,7 +345,7 @@ VALID = read_variable_to_vector(CARDAMOM_DRIVER_DATA_DIR, "era_valid_v6.nc", "er
 INVALID = np.isnan(RUN_SIMULATION_IDX) | np.invert(VALID) | (RUN_SIMULATION_IDX < 0) # filter out dev PIXELS
 TEST = np.invert(np.isnan(RUN_SIMULATION_IDX) | np.invert(VALID)) & (RUN_SIMULATION_IDX < 0)
     
-predictor_matrix = read_multiple_varible_to_array(CARDAMOM_DRIVER_DATA_DIR, "combined_global_driver_v6.nc", predictor_list)
+predictor_matrix = read_multiple_varible_to_array(CARDAMOM_DRIVER_DATA_DIR, DIFFERLAND_DRIVER_NAME, predictor_list)
 test_predictor_matrix = deepcopy(predictor_matrix)
 test_predictor_matrix[:, np.invert(TEST)] = np.nan
 
@@ -393,15 +393,15 @@ dev_matrix = jnp.array(scaled_predictor_matrix_dev, dtype=jnp.float32)
 test_matrix = jnp.array(scaled_predictor_matrix_test, dtype=jnp.float32)
 
 met_list = ["DAYS", "T_min", "T_max", "SOLR", "CO2", "DOY", "BURNED_AREA", "VPD", "PREC", "LAT", "DELTA_T", "MAT", "MAP"]
-met_matrix = read_multiple_variable_temporal_to_vector(CARDAMOM_DRIVER_DATA_DIR, "combined_global_driver_v6.nc", met_list, not_nan_idx, shuffle_idx, n_t=NT)
+met_matrix = read_multiple_variable_temporal_to_vector(CARDAMOM_DRIVER_DATA_DIR, DIFFERLAND_DRIVER_NAME, met_list, not_nan_idx, shuffle_idx, n_t=NT)
 met_matrix = jnp.transpose(met_matrix, axes=[2, 1, 0])
 met_matrix_train = jnp.array(met_matrix[sorted_valid_idx <= train_dev_idx, :], dtype=jnp.float32)
 met_matrix_dev = jnp.array(met_matrix[sorted_valid_idx > train_dev_idx, :], dtype=jnp.float32)
 
-test_met_matrix = read_multiple_variable_temporal_to_vector(CARDAMOM_DRIVER_DATA_DIR, "combined_global_driver_v6.nc", met_list, test_not_nan_idx, test_shuffle_idx, n_t=NT)
+test_met_matrix = read_multiple_variable_temporal_to_vector(CARDAMOM_DRIVER_DATA_DIR, DIFFERLAND_DRIVER_NAME, met_list, test_not_nan_idx, test_shuffle_idx, n_t=NT)
 met_matrix_test = jnp.array(jnp.transpose(test_met_matrix, axes=[2, 1, 0]), dtype=jnp.float32)
     
-output_matrix = nan_read_multiple_variable_temporal_to_vector(CARDAMOM_DRIVER_DATA_DIR, "combined_global_driver_v6.nc", output_list, not_nan_idx, shuffle_idx, n_t=NT)
+output_matrix = nan_read_multiple_variable_temporal_to_vector(CARDAMOM_DRIVER_DATA_DIR, DIFFERLAND_DRIVER_NAME, output_list, not_nan_idx, shuffle_idx, n_t=NT)
 output_matrix = jnp.transpose(output_matrix, axes=[2, 1, 0])
 
 output_matrix=output_matrix.at[np.invert(ASSIMILATE_SHUFFLE_FLAG), :, 2].set(-9999)
@@ -411,7 +411,7 @@ output_matrix=output_matrix.at[np.invert(ASSIMILATE_SHUFFLE_FLAG), :, 7].set(0)
 output_matrix_train = jnp.array(output_matrix[sorted_valid_idx <= train_dev_idx, :], dtype=jnp.float32)
 output_matrix_dev = jnp.array(output_matrix[sorted_valid_idx > train_dev_idx, :], dtype=jnp.float32)
 
-output_matrix_test = nan_read_multiple_variable_temporal_to_vector(CARDAMOM_DRIVER_DATA_DIR, "combined_global_driver_v6.nc", output_list, test_not_nan_idx, test_shuffle_idx, n_t=NT)
+output_matrix_test = nan_read_multiple_variable_temporal_to_vector(CARDAMOM_DRIVER_DATA_DIR, DIFFERLAND_DRIVER_NAME, output_list, test_not_nan_idx, test_shuffle_idx, n_t=NT)
 output_matrix_test = jnp.transpose(output_matrix_test, axes=[2, 1, 0])
 output_matrix_test=output_matrix_test.at[np.invert(TEST_ASSIMILATE_SHUFFLE_FLAG), :, 2].set(-9999)
 output_matrix_test=output_matrix_test.at[np.invert(TEST_ASSIMILATE_SHUFFLE_FLAG), :, 3].set(0)
@@ -845,7 +845,7 @@ if args.versbose:
     print("Model performance figures saved to {}".format(FIG_DIR))
 
 # read in spatial predictors
-predictor_matrix_all = read_multiple_varible_to_array(CARDAMOM_DRIVER_DATA_DIR, "combined_global_driver_v6.nc", predictor_list)
+predictor_matrix_all = read_multiple_varible_to_array(CARDAMOM_DRIVER_DATA_DIR, DIFFERLAND_DRIVER_NAME, predictor_list)
 # get the CMS-Flux index
 RUN_SIMULATION_IDX = read_variable_to_vector(CARDAMOM_DRIVER_DATA_DIR, "run_simulation_idx_v6.nc", "run_simulation_idx", time_idx=run-1)
 VALID = read_variable_to_vector(CARDAMOM_DRIVER_DATA_DIR, "era_valid_v6.nc", "era_valid")
@@ -856,7 +856,7 @@ scaled_predictor_matrix_all = (predictor_matrix_all.T - np.mean(predictor_matrix
 all_matrix = jnp.array(scaled_predictor_matrix_all, dtype=jnp.float32)
 
 met_list = ["DAYS", "T_min", "T_max", "SOLR", "CO2", "DOY", "BURNED_AREA", "VPD", "PREC", "LAT", "DELTA_T", "MAT", "MAP"]
-met_matrix_all = read_multiple_variable_temporal_to_vector(CARDAMOM_DRIVER_DATA_DIR, "combined_global_driver_v6.nc", met_list, np.full(predictor_matrix_all.shape[1], True), np.arange(0, predictor_matrix_all.shape[1]), n_t=NT)
+met_matrix_all = read_multiple_variable_temporal_to_vector(CARDAMOM_DRIVER_DATA_DIR, DIFFERLAND_DRIVER_NAME, met_list, np.full(predictor_matrix_all.shape[1], True), np.arange(0, predictor_matrix_all.shape[1]), n_t=NT)
 met_matrix_all = jnp.transpose(met_matrix_all, axes=[2, 1, 0])
 
 
