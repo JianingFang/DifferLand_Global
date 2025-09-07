@@ -5,6 +5,7 @@ from functools import partial
 import os
 import numpy as np
 import pickle
+import warnings
 import sys
 from scipy.stats import linregress
 from sklearn.metrics import r2_score, mean_absolute_error, root_mean_squared_error
@@ -614,8 +615,10 @@ def compute_metrics(label, predicted, var_name, result_dict):
         result_dict[var_name+ "_flat_intercept_stderr"]=np.nan
     
     
-    label_spatial = np.nanmean(label, axis=1)
-    predicted_spatial = np.nanmean(predicted, axis=1)
+    with warnings.catch_warnings():
+        warnings.simplefilter("ignore", category=RuntimeWarning)
+        label_spatial = np.nanmean(label, axis=1)
+        predicted_spatial = np.nanmean(predicted, axis=1)
     sel_spatial = np.invert(np.isnan(label_spatial) | np.isnan(predicted_spatial))
 
     result_dict[var_name+ "_spatial_nse"]=nan_filtered_r2_score(label_spatial[sel_spatial], predicted_spatial[sel_spatial])
