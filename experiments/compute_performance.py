@@ -123,15 +123,33 @@ if args.run < 1 or args.run > 100:
 run = args.run
 
 exp_str = "dalec993_{}_run_{}".format(args.predictors,
+
                                 run)
+
+        
 if args.verbose:
     print("Number of hidden layers in the embeeding NN: {}".format(HIDDEN_LAYERS))
     print("Number of neurons in each NN layer: {}".format(NEURONS))
     print("Learning rate: {}".format(LEARNING_RATE))
     print("Number of timesteps: {}".format(NT))
     print("Spatial predictors:")
+    
     for p in predictor_list:
-        print("+ {}".format(p))
+        print("\t+ {}".format(p))
+        
+    print("Targer variables:")
+    print(f"\t*{SIF_PROXY_TARGET=}")
+    print(f"\t*{NBE_INVERSION_TARGET=}")
+    print(f"\t*{SATELLITE_LAI_TARGET=}")
+    print(f"\t*{GRACE_LWE_TARGET=}")
+    print(f"\t*{BIOMASS_TARGET=}")
+    print(f"\t*{FIRE_EMISSION_TARGET=}")
+    print(f"\t*{STATIC_SOIL_TARGET=}")
+    print(f"\t*{VOD_TARGET=}")
+    print(f"\t*{GPP_FLUXNET_TARGET=}")
+    print(f"\t*{RECO_FLUXNET_TARGET=}")
+    print(f"\t*{ET_FLUXNET_TARGET=}")
+    print(f"\t*{GLEAM_ET_TARGET=}")
 
 
 create_folder_if_not_exists(POSTANALYSIS_DIR, verbose=args.verbose)
@@ -1272,14 +1290,14 @@ metrics_ds["som_final"] = predicted_som_da[-12, :, :].expand_dims(dim={"run":[ru
 
 metrics_ds.to_netcdf(os.path.join(NC_DIR, "{}_mean_std.nc".format(exp_str)))
 
-if args.versbose:
+if args.verbose:
     print("Mean and std of select pools saved to {}".format(os.path.join(NC_DIR, "{}_mean_std.nc".format(exp_str))))
 
 
 nbe_ds = xr.Dataset({"predicted_nbe":predicted_nbe_da.expand_dims(dim={"run":[run,]}, axis=0)})
 nbe_ds.to_netcdf(os.path.join(NC_DIR, "{}_nbe.nc".format(exp_str)))
 
-if args.versbose:
+if args.verbose:
     print("Modeled NBE saved to {}".format(os.path.join(NC_DIR, "{}_nbe.nc".format(exp_str))))
 
 
@@ -1298,7 +1316,7 @@ gpp_et_ds = xr.Dataset({"predicted_gpp":predicted_gpp_da.expand_dims(dim={"run":
                             "predicted_fire":predicted_fire_da.expand_dims(dim={"run":[run,]}, axis=0)})
 gpp_et_ds.to_netcdf(os.path.join(NC_DIR, "{}_gpp_et.nc".format(exp_str)))
 
-if args.versbose:
+if args.verbose:
     print("Modeled GPP & ET saved to {}".format(os.path.join(NC_DIR, "{}_gpp_et.nc".format(exp_str))))
 
 
@@ -1306,7 +1324,7 @@ if args.versbose:
 with open(os.path.join(NPY_DIR, "{}_embed.npy".format(exp_str)), "wb") as fp:
     np.save(fp, np.array(embedded_layer_all))
 
-if args.versbose:
+if args.verbose:
     print("Spatial embeding saved to {}".format(os.path.join(NPY_DIR, "{}_embed.npy".format(exp_str))))
 
 print("Post-processing complete")
