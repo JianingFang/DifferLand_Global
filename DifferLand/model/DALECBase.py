@@ -1,6 +1,5 @@
 from dataclasses import dataclass, field
 from DifferLand.util.normalization import unnormalize_parameters
-from functools import partial
 import jax
 
 @dataclass

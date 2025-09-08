@@ -1,9 +1,3 @@
-..
-   DifferLand (Global) documentation master file, created by
-   sphinx-quickstart on Fri Jul  4 16:25:49 2025.
-   You can adapt this file completely to your liking, but it should at least
-   contain the root `toctree` directive.
-
 ###################################
  DifferLand (Global) documentation
 ###################################
@@ -24,6 +18,9 @@ change. Its hybrid modeling capabilities open opportunities for integrating
 ecological knowledge with machine learning to improve predictions and gain new
 insights into carbon and water dynamics across diverse landscapes.
 
+Users interested in running DifferLand at site-level without parameter spatilization
+are welcomed to use our `site-level DifferLand model <https://github.com/JianingFang/DifferLand_v1.0>`_. 
+
 .. image:: figs/differland_schematics.png
   :width: 1000
   :alt: Alternative text
@@ -32,7 +29,10 @@ insights into carbon and water dynamics across diverse landscapes.
 Contents
 --------
 .. toctree::
+   :maxdepth: 1
+
    getting_started
+   differland_overview
    data_requirement
    model_training
    interpret_results

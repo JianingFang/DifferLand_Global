@@ -1,4 +1,4 @@
-DifferLand
+API Reference
 ==========
 
 .. toctree::
