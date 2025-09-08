@@ -1576,7 +1576,7 @@ for i in range(len(initial_poolnames)):
 
 
 ds.to_netcdf(os.path.join(NC_DIR, "{}_params.nc".format(exp_str)))
-if args.versbose:
+if args.verbose:
     print(
         "Maps of ecological parameters saved to {}".format(
             os.path.join(NC_DIR, "{}_params.nc".format(exp_str))
@@ -2190,7 +2190,7 @@ metrics_ds["trend_p_biomass"] = trend_p_biomass.expand_dims(
 
 metrics_ds.to_netcdf(os.path.join(NC_DIR, "{}_cor.nc".format(exp_str)))
 
-if args.versbose:
+if args.verbose:
     print(
         "Maps of correlation coefficients saved to {}".format(
             os.path.join(NC_DIR, "{}_cor.nc".format(exp_str))
