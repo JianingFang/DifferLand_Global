@@ -374,46 +374,49 @@ def lag_linregress_3D(x, y, lagx=0, lagy=0):
     Lag values can be assigned to either of the data, with lagx shifting x, and lagy shifting y, with the specified lag amount.
     Reference: https://hrishichandanpurkar.blogspot.com/2017/09/vectorized-functions-for-correlation.html
     """
-    # 1. Ensure that the data are properly alinged to each other.
-    x, y = xr.align(x, y)
-
-    # 2. Add lag information if any, and shift the data accordingly
-    if lagx != 0:
-        # If x lags y by 1, x must be shifted 1 step backwards.
-        # But as the 'zero-th' value is nonexistant, xr assigns it as invalid (nan). Hence it needs to be dropped
-        x = x.shift(time=-lagx).dropna(dim="time")
-        # Next important step is to re-align the two datasets so that y adjusts to the changed coordinates of x
+    with warnings.catch_warnings():
+        warnings.simplefilter("ignore", category=RuntimeWarning)
+        # 1. Ensure that the data are properly alinged to each other.
         x, y = xr.align(x, y)
 
-    if lagy != 0:
-        y = y.shift(time=-lagy).dropna(dim="time")
-        x, y = xr.align(x, y)
+        # 2. Add lag information if any, and shift the data accordingly
+        if lagx != 0:
+            # If x lags y by 1, x must be shifted 1 step backwards.
+            # But as the 'zero-th' value is nonexistant, xr assigns it as invalid (nan). Hence it needs to be dropped
+            x = x.shift(time=-lagx).dropna(dim="time")
+            # Next important step is to re-align the two datasets so that y adjusts to the changed coordinates of x
+            x, y = xr.align(x, y)
 
-    # 3. Compute data length, mean and standard deviation along time axis for further use:
-    # n     = x.shape[0]
-    n = np.sum(np.invert(np.isnan(x.values)) & np.invert(np.isnan(y.values)), axis=0)
-    xmean = x.mean(axis=0)
-    ymean = y.mean(axis=0)
-    xstd = x.std(axis=0)
-    ystd = y.std(axis=0)
+        if lagy != 0:
+            y = y.shift(time=-lagy).dropna(dim="time")
+            x, y = xr.align(x, y)
 
-    # 4. Compute covariance along time axis
-    cov = np.sum((x - xmean) * (y - ymean), axis=0) / (n)
+        # 3. Compute data length, mean and standard deviation along time axis for further use:
+        # n     = x.shape[0]
+        n = np.sum(np.invert(np.isnan(x.values)) & np.invert(np.isnan(y.values)), axis=0)
+        xmean = x.mean(axis=0)
+        ymean = y.mean(axis=0)
+        xstd = x.std(axis=0)
+        ystd = y.std(axis=0)
 
-    # 5. Compute correlation along time axis
-    cor = cov / (xstd * ystd)
+        # 4. Compute covariance along time axis
+        cov = np.sum((x - xmean) * (y - ymean), axis=0) / (n)
 
-    # 6. Compute regression slope and intercept:
-    slope = cov / (xstd**2)
-    intercept = ymean - xmean * slope
+        # 5. Compute correlation along time axis
+        cor = cov / (xstd * ystd)
 
-    # 7. Compute P-value and standard error
-    # Compute t-statistics
-    tstats = cor * np.sqrt(n - 2) / np.sqrt(1 - cor**2)
-    stderr = slope / tstats
+        # 6. Compute regression slope and intercept:
+        slope = cov / (xstd**2)
+        intercept = ymean - xmean * slope
 
-    pval = t.sf(tstats, n - 2) * 2
-    pval = xr.DataArray(pval, dims=cor.dims, coords=cor.coords)
+        # 7. Compute P-value and standard error
+        # Compute t-statistics
+
+        tstats = cor * np.sqrt(n - 2) / np.sqrt(1 - cor**2)
+        stderr = slope / tstats
+
+        pval = t.sf(tstats, n - 2) * 2
+        pval = xr.DataArray(pval, dims=cor.dims, coords=cor.coords)
 
     return cov, cor, slope, intercept, pval, stderr
 
@@ -1602,8 +1605,8 @@ cov_lai, cor_lai, slope_lai, intercept_lai, pval_lai, stderr_lai = lag_linregres
     predicted_lai_da, observed_lai_da
 )
 
-observed_lai_annual_da = observed_lai_da.resample({"time": "1Y"}).mean()
-predicted_lai_annual_da = predicted_lai_da.resample({"time": "1Y"}).mean()
+observed_lai_annual_da = observed_lai_da.resample({"time": "1YE"}).mean()
+predicted_lai_annual_da = predicted_lai_da.resample({"time": "1YE"}).mean()
 
 (
     cov_lai_annual,
@@ -1639,8 +1642,8 @@ predicted_sif_da = xr.DataArray(
 )
 
 
-observed_sif_annual_da = observed_sif_da.resample({"time": "1Y"}).mean()
-predicted_sif_annual_da = predicted_sif_da.resample({"time": "1Y"}).mean()
+observed_sif_annual_da = observed_sif_da.resample({"time": "1YE"}).mean()
+predicted_sif_annual_da = predicted_sif_da.resample({"time": "1YE"}).mean()
 cov_sif, cor_sif, slope_sif, intercept_sif, pval_sif, stderr_sif = lag_linregress_3D(
     predicted_sif_da, observed_sif_da
 )
@@ -1681,8 +1684,8 @@ cov_et, cor_et, slope_et, intercept_et, pval_et, stderr_et = lag_linregress_3D(
     predicted_et_da, observed_et_da
 )
 
-observed_et_annual_da = observed_et_da.resample({"time": "1Y"}).mean()
-predicted_et_annual_da = predicted_et_da.resample({"time": "1Y"}).mean()
+observed_et_annual_da = observed_et_da.resample({"time": "1YE"}).mean()
+predicted_et_annual_da = predicted_et_da.resample({"time": "1YE"}).mean()
 cov_et, cor_et, slope_et, intercept_et, pval_et, stderr_et = lag_linregress_3D(
     predicted_et_da, observed_et_da
 )
@@ -1725,8 +1728,8 @@ cov_nbe, cor_nbe, slope_nbe, intercept_nbe, pval_nbe, stderr_nbe = lag_linregres
     predicted_nbe_da, observed_nbe_da
 )
 
-observed_nbe_annual_da = observed_nbe_da.resample({"time": "1Y"}).mean()
-predicted_nbe_annual_da = predicted_nbe_da.resample({"time": "1Y"}).mean()
+observed_nbe_annual_da = observed_nbe_da.resample({"time": "1YE"}).mean()
+predicted_nbe_annual_da = predicted_nbe_da.resample({"time": "1YE"}).mean()
 cov_nbe, cor_nbe, slope_nbe, intercept_nbe, pval_nbe, stderr_nbe = lag_linregress_3D(
     predicted_nbe_da, observed_nbe_da
 )
@@ -1755,8 +1758,8 @@ cov_ewt, cor_ewt, slope_ewt, intercept_ewt, pval_ewt, stderr_ewt = lag_linregres
     predicted_ewt_da, observed_ewt_da
 )
 
-observed_ewt_annual_da = observed_ewt_da.resample({"time": "1Y"}).mean()
-predicted_ewt_annual_da = predicted_ewt_da.resample({"time": "1Y"}).mean()
+observed_ewt_annual_da = observed_ewt_da.resample({"time": "1YE"}).mean()
+predicted_ewt_annual_da = predicted_ewt_da.resample({"time": "1YE"}).mean()
 cov_ewt, cor_ewt, slope_ewt, intercept_ewt, pval_ewt, stderr_ewt = lag_linregress_3D(
     predicted_ewt_da, observed_ewt_da
 )
@@ -1769,7 +1772,7 @@ cov_ewt, cor_ewt, slope_ewt, intercept_ewt, pval_ewt, stderr_ewt = lag_linregres
     stderr_ewt_annual,
 ) = lag_linregress_3D(predicted_ewt_annual_da, observed_ewt_annual_da)
 
-if args.biomass == "biomass_ib":
+if BIOMASS_TARGET == "biomass_ib":
     observed_biomass_da = xr.open_dataset(
         os.path.join(CARDAMOM_DRIVER_DATA_DIR, DIFFERLAND_DRIVER_NAME)
     )["IB_AGC"][warm_up:, :, :]
@@ -1783,7 +1786,7 @@ else:
     +xr.open_dataset(os.path.join(CARDAMOM_DRIVER_DATA_DIR, DIFFERLAND_DRIVER_NAME))[
         "bgb_yan"
     ][warm_up:, :, :]
-
+    
 predicted_biomass_da = xr.DataArray(
     (
         predicted_all[:, :, warm_up:, model.pfn.next_foliar_pool]
@@ -1807,8 +1810,8 @@ predicted_biomass_da = xr.DataArray(
     stderr_biomass,
 ) = lag_linregress_3D(predicted_biomass_da, observed_biomass_da)
 
-observed_biomass_annual_da = observed_biomass_da.resample({"time": "1Y"}).mean()
-predicted_biomass_annual_da = predicted_biomass_da.resample({"time": "1Y"}).mean()
+observed_biomass_annual_da = observed_biomass_da.resample({"time": "1YE"}).mean()
+predicted_biomass_annual_da = predicted_biomass_da.resample({"time": "1YE"}).mean()
 (
     cov_biomass,
     cor_biomass,

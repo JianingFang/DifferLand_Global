@@ -27,11 +27,19 @@ extensions = [
    'sphinx.ext.doctest',
    'sphinx.ext.autodoc',
    'sphinx.ext.autosummary',
+   "sphinx.ext.viewcode", 
+   'myst_parser'
+   
 ]
 
 
 templates_path = ['_templates']
 exclude_patterns = []
+
+source_suffix = {
+   ".rst": "restructuredtext",
+   ".md": "markdown",
+}
 
 
 
