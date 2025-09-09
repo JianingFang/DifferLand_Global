@@ -315,9 +315,9 @@ X = pd.DataFrame({predictor_list[i]:subsampled_predictors[i, :] for i in range(l
 
 if args.verbose:
     if args.pft == "none":
-        print(f"Now start computing unconditioned SHAP values for {VARIABLE_OF_INTEREST} from {exp_str}...")
+        print(f"Now start computing unconditioned SHAP values for {VARIABLE_OF_INTEREST} from {SETUP}, run:{"-".join([str(r) for r in RUNS])}")
     else:
-        print(f"Now start computing SHAP values for {VARIABLE_OF_INTEREST} from {exp_str} conditioned on PFT={args.pft}...")
+        print(f"Now start computing SHAP values for {VARIABLE_OF_INTEREST} from {SETUP}, run:{"-".join([str(r) for r in RUNS])} conditioned on PFT={args.pft}...")
         
 X100 = shap.utils.sample(X, 100)  # 100 instances for use as the background distribution
 
