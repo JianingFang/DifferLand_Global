@@ -40,7 +40,7 @@ parser.add_argument(
     "-r",
     "--runs",
     type=parse_int_list,
-    help="Specify an ensemble member index or a comma-separated list" / 
+    help="Specify an ensemble member index or a comma-separated list" \
     "of indices for SHAP computation (e.g., 1 or 1,2,3).",
     required=True,
 )
