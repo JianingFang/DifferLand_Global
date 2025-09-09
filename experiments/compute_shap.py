@@ -53,7 +53,7 @@ parser.add_argument(
     "-e", "--ensemble_shap", action=argparse.BooleanOptionalAction, default=False
 )
 parser.add_argument(
-    "-p", "--pft", type=str, default="none"
+    "-c", "--pft", type=str, default="none"
 )
 parser.add_argument(
     "-x", "--pft_purity_percentage_threshold", type=float, default=80.0
@@ -62,7 +62,7 @@ parser.add_argument(
     "-n", "--normalize", action=argparse.BooleanOptionalAction, default=False
 )
 parser.add_argument(
-    "-c", "--combined_training_and_development_sets",
+    "-d", "--combined_training_and_development_sets",
     help="whether the model was train on combined training and develoment sets",
     action=argparse.BooleanOptionalAction, default=False
 )
