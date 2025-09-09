@@ -40,7 +40,8 @@ parser.add_argument(
     "-r",
     "--runs",
     type=parse_int_list,
-    help="Specify an ensemble member index or a comma-separated list of indices for SHAP computation (e.g., 1 or 1,2,3).",
+    help="Specify an ensemble member index or a comma-separated list" / 
+    "of indices for SHAP computation (e.g., 1 or 1,2,3).",
     required=True,
 )
 parser.add_argument("-p", "--predictors", required=True)
@@ -73,7 +74,7 @@ POSTANALYSIS_DIR = "./postanalysis/"
 
 NC_DIR = "./postanalysis/nc/"
 SHAP_DIR = "./postanalysis/shap/"
-DATA_DIR = "../data/"
+DATA_DIR = "/burg-archive/glab/users/jf3423/data/CARDAMOM_driver_data/global/"
 predictor_mean_df = pd.read_csv(os.path.join(DATA_DIR, "predictor_mean_df_v6.csv"))
 predictor_std_df = pd.read_csv(os.path.join(DATA_DIR, "predictor_std_df_v6.csv"))    
     
@@ -248,6 +249,7 @@ for seed, SETUP in enumerate(["PFT+CLIM+SOIL+AGE", "CLIM+SOIL+AGE"]):
             param_state_list.append(param_state)
             
     # read in spatial predictors values
+    print(predictor_list)
     predictor_matrix = read_multiple_varible_to_array(DATA_DIR, "combined_global_initial_v6.nc", predictor_list)
     
     
