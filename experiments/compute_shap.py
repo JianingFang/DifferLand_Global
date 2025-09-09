@@ -94,8 +94,9 @@ if args.pft not in ["NF", "DBF", "EBF", "MF", "SH", "SAV", "GRA", "WET", "CRO", 
     raise ValueError("--pft must be one of `none`, `NF`, `DBF`, `EBF`, `MF`," /
                      "`SH`, `SAV`, `GRA`, `WET`, `CRO`, `NVG`, got {}".format(args.pft))
 
-if args.verbose:
-    print("Now start computing shap values...")
+
+        
+    
 
 model = DALEC993(water_stress_type="default")
 VARIABLE_OF_INTEREST = args.target
@@ -312,6 +313,13 @@ else:
 
 
 X = pd.DataFrame({predictor_list[i]:subsampled_predictors[i, :] for i in range(len(predictor_list))})
+
+if args.verbose:
+    if args.pft == "none":
+        print(f"Now start computing unconditioned SHAP values for {VARIABLE_OF_INTEREST} from {exp_str}...")
+    else:
+        print(f"Now start computing SHAP values for {VARIABLE_OF_INTEREST} from {exp_str} conditioned on PFT={args.pft}...")
+        
 X100 = shap.utils.sample(X, 100)  # 100 instances for use as the background distribution
 
 predict_fun = jax.jit(partial(predict_batch_averaged_param,
