@@ -76,7 +76,8 @@ NC_DIR = "./postanalysis/nc/"
 SHAP_DIR = "./postanalysis/shap/"
 DATA_DIR = "/burg-archive/glab/users/jf3423/data/CARDAMOM_driver_data/global/"
 predictor_mean_df = pd.read_csv(os.path.join(DATA_DIR, "predictor_mean_df_v6.csv"))
-predictor_std_df = pd.read_csv(os.path.join(DATA_DIR, "predictor_std_df_v6.csv"))    
+predictor_std_df = pd.read_csv(os.path.join(DATA_DIR, "predictor_std_df_v6.csv")) 
+   
     
 create_folder_if_not_exists(POSTANALYSIS_DIR)
 create_folder_if_not_exists(SHAP_DIR)
@@ -89,6 +90,8 @@ if args.verbose:
 model = DALEC993(water_stress_type="default")
 VARIABLE_OF_INTEREST = args.target
 RUNS = np.array(args.runs)
+SETUP = args.predictors
+
 
 dalec_parnames = ["decomposition_rate",
 "f_gpp",
@@ -238,84 +241,83 @@ def get_predictor_list(setup):
     return predictor_list
 
 
-for seed, SETUP in enumerate(["PFT+CLIM+SOIL+AGE", "CLIM+SOIL+AGE"]):
-    predictor_list = get_predictor_list(SETUP)
-    param_state_list = []
-    for run in RUNS:
-        exp_str = "dalec993_{}_run_{}".format(args.predictors, run)
-        pickle_name = os.path.join(OUTPUT_DIR, exp_str + ".pickle")
-        with open(pickle_name, "rb") as fp:
-            param_state = pickle.load(fp)
-            param_state_list.append(param_state)
-            
-    # read in spatial predictors values
-    predictor_matrix = read_multiple_varible_to_array(DATA_DIR, "combined_global_initial_v6.nc", predictor_list)
-    
-    
-    RUN_SIMULATION_IDX = read_variable_to_vector(DATA_DIR, "run_simulation_idx_v6.nc", "run_simulation_idx", time_idx=60)
+predictor_list = get_predictor_list(SETUP)
+param_state_list = []
+for run in RUNS:
+    exp_str = "dalec993_{}_run_{}".format(args.predictors, run)
+    pickle_name = os.path.join(OUTPUT_DIR, exp_str + ".pickle")
+    with open(pickle_name, "rb") as fp:
+        param_state = pickle.load(fp)
+        param_state_list.append(param_state)
         
-    VALID = read_variable_to_vector(DATA_DIR, "era_valid_v6.nc", "era_valid")
-
-    INVALID = np.isnan(RUN_SIMULATION_IDX) | np.invert(VALID) | (RUN_SIMULATION_IDX < 0) # filter out TEST PIXELS
-   
-    ASSIMILATE_BULK_FLAG = read_variable_to_vector(DATA_DIR, "assimilate_bulk_variable_v6.nc", "assimilate_bulk_variable")
-    predictor_matrix[:, INVALID] = np.nan
-
-    # filter out nan pixles
-    not_nan_idx = np.invert((np.sum(np.isnan(predictor_matrix), axis=0) > 0))
-    predictor_matrix = predictor_matrix[:, not_nan_idx]
+# read in spatial predictors values
+predictor_matrix = read_multiple_varible_to_array(DATA_DIR, "combined_global_initial_v6.nc", predictor_list)
 
 
-    VALID_IDX = RUN_SIMULATION_IDX[not_nan_idx]
+RUN_SIMULATION_IDX = read_variable_to_vector(DATA_DIR, "run_simulation_idx_v6.nc", "run_simulation_idx", time_idx=60)
+    
+VALID = read_variable_to_vector(DATA_DIR, "era_valid_v6.nc", "era_valid")
 
-    shuffle_idx = np.argsort(VALID_IDX, kind='mergesort')
-    ASSIMILATE_SHUFFLE_FLAG = ASSIMILATE_BULK_FLAG[not_nan_idx][shuffle_idx]
+INVALID = np.isnan(RUN_SIMULATION_IDX) | np.invert(VALID) | (RUN_SIMULATION_IDX < 0) # filter out TEST PIXELS
 
-    sorted_valid_idx = VALID_IDX[shuffle_idx]
-    predictor_matrix_shuffled = predictor_matrix[:, shuffle_idx]
+ASSIMILATE_BULK_FLAG = read_variable_to_vector(DATA_DIR, "assimilate_bulk_variable_v6.nc", "assimilate_bulk_variable")
+predictor_matrix[:, INVALID] = np.nan
 
-            
-    subsampled_predictors = predictor_matrix_shuffled[:, np.random.randint(0, 
-                                                predictor_matrix_shuffled.shape[1], size=1000)]
+# filter out nan pixles
+not_nan_idx = np.invert((np.sum(np.isnan(predictor_matrix), axis=0) > 0))
+predictor_matrix = predictor_matrix[:, not_nan_idx]
+
+
+VALID_IDX = RUN_SIMULATION_IDX[not_nan_idx]
+
+shuffle_idx = np.argsort(VALID_IDX, kind='mergesort')
+ASSIMILATE_SHUFFLE_FLAG = ASSIMILATE_BULK_FLAG[not_nan_idx][shuffle_idx]
+
+sorted_valid_idx = VALID_IDX[shuffle_idx]
+predictor_matrix_shuffled = predictor_matrix[:, shuffle_idx]
+
         
-    batch_params = jax.tree_util.tree_map(
-        lambda *xs: jnp.stack(xs), *param_state_list
-    )
-
-
-    if not args.combined_training_and_development_sets:
+subsampled_predictors = predictor_matrix_shuffled[:, np.random.randint(0, 
+                                            predictor_matrix_shuffled.shape[1], size=1000)]
     
-        batch_mean = predictor_mean_df[predictor_list].loc[RUNS-1, :].values
-
-        batch_std = predictor_std_df[predictor_list].loc[RUNS-1, :].values
-    else: 
-        batch_mean = np.repeat(predictor_mean_df[predictor_list].loc[100, :].values[np.newaxis, :], len(RUNS), axis=0)
-        batch_std = np.repeat(predictor_std_df[predictor_list].loc[100, :].values[np.newaxis, :], len(RUNS), axis=0)
-        
+batch_params = jax.tree_util.tree_map(
+    lambda *xs: jnp.stack(xs), *param_state_list
+)
 
 
-    X = pd.DataFrame({predictor_list[i]:subsampled_predictors[i, :] for i in range(len(predictor_list))})
-    X100 = shap.utils.sample(X, 100)  # 100 instances for use as the background distribution
+if not args.combined_training_and_development_sets:
 
-    predict_fun = jax.jit(partial(predict_batch_averaged_param,
-                                ensemble_predict_func=ensemble_param_prediction_forward,
-                                model=model,
-                                var=VARIABLE_OF_INTEREST,
-                                varmax=2,
-                                varmin=1,
-                                dalec_par_dict=dalec_par_dict,
-                                pheno_par_dict=pheno_par_dict,
-                                initial_par_dict=initial_par_dict,
-                                batch_params=batch_params,
-                                batch_mean=batch_mean,
-                                batch_std=batch_std,
-                               ))
+    batch_mean = predictor_mean_df[predictor_list].loc[RUNS-1, :].values
 
-    explainer = shap.KernelExplainer(predict_fun, X100)
-    shap_values = explainer(X)
+    batch_std = predictor_std_df[predictor_list].loc[RUNS-1, :].values
+else: 
+    batch_mean = np.repeat(predictor_mean_df[predictor_list].loc[100, :].values[np.newaxis, :], len(RUNS), axis=0)
+    batch_std = np.repeat(predictor_std_df[predictor_list].loc[100, :].values[np.newaxis, :], len(RUNS), axis=0)
     
-    
-    save_fn = os.path.join("./postanalysis/shap/", f"{SETUP}_{VARIABLE_OF_INTEREST}_{"-".join([str(r) for r in RUNS])}_ensemble_shap.py")
-    
-    with open(save_fn, "wb") as f:
-        pickle.dump(shap_values, f)
+
+
+X = pd.DataFrame({predictor_list[i]:subsampled_predictors[i, :] for i in range(len(predictor_list))})
+X100 = shap.utils.sample(X, 100)  # 100 instances for use as the background distribution
+
+predict_fun = jax.jit(partial(predict_batch_averaged_param,
+                            ensemble_predict_func=ensemble_param_prediction_forward,
+                            model=model,
+                            var=VARIABLE_OF_INTEREST,
+                            varmax=2,
+                            varmin=1,
+                            dalec_par_dict=dalec_par_dict,
+                            pheno_par_dict=pheno_par_dict,
+                            initial_par_dict=initial_par_dict,
+                            batch_params=batch_params,
+                            batch_mean=batch_mean,
+                            batch_std=batch_std,
+                            ))
+
+explainer = shap.KernelExplainer(predict_fun, X100)
+shap_values = explainer(X)
+
+
+save_fn = os.path.join("./postanalysis/shap/", f"{SETUP}_{VARIABLE_OF_INTEREST}_{"-".join([str(r) for r in RUNS])}_ensemble_shap.py")
+
+with open(save_fn, "wb") as f:
+    pickle.dump(shap_values, f)
