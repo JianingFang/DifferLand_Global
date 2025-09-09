@@ -91,7 +91,8 @@ create_folder_if_not_exists(SHAP_DIR)
 args = parser.parse_args()
 
 if args.pft not in ["NF", "DBF", "EBF", "MF", "SH", "SAV", "GRA", "WET", "CRO", "NVG"]:
-    raise ValueError("--pft must be one of `none`, `NF`, `DBF`, `EBF`, `MF`, `SH`, `SAV`, `GRA`, `WET`, `CRO`, `NVG`, got {}".format(args.pft))
+    raise ValueError("--pft must be one of `none`, `NF`, `DBF`, `EBF`, `MF`," /
+                     "`SH`, `SAV`, `GRA`, `WET`, `CRO`, `NVG`, got {}".format(args.pft))
 
 if args.verbose:
     print("Now start computing shap values...")
