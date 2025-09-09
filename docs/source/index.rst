@@ -36,6 +36,7 @@ Contents
    data_requirement
    model_training
    interpret_results
+   ensemble_shap
    caveats
    build_your_own_model
    contribute

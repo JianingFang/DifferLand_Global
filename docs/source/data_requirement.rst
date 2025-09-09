@@ -107,6 +107,11 @@ parameters and state variables:
   - GPP, RECO, ET from FLUXNET2015, ICOS, OzFlux, AmeriFlux
   - Strict representativeness filtering applied
   - Aggregated to 0.25° where multiple towers exist
+  
+.. _differland-data-fig:
+.. figure:: figs/assimilated_datasets.png
+  :width: 1000
+  :align: center
 
 ------------------------
 Alternative Data Sources
