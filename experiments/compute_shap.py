@@ -314,7 +314,7 @@ for seed, SETUP in enumerate(["PFT+CLIM+SOIL+AGE", "CLIM+SOIL+AGE"]):
     explainer = shap.KernelExplainer(predict_fun, X100)
     shap_values = explainer(X)
     
-    save_fn = os.path.join("./postanalysis/shap/", f"{SETUP}_{VARIABLE_OF_INTEREST}_{RUNS.tolist().join("-")}_ensemble_shap.py")
+    save_fn = os.path.join("./postanalysis/shap/", f"{SETUP}_{VARIABLE_OF_INTEREST}_{"-".join(RUNS.tolist())}_ensemble_shap.py")
     
     with open(save_fn, "wb") as f:
         pickle.dump(shap_values, f)
