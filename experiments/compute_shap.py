@@ -249,7 +249,6 @@ for seed, SETUP in enumerate(["PFT+CLIM+SOIL+AGE", "CLIM+SOIL+AGE"]):
             param_state_list.append(param_state)
             
     # read in spatial predictors values
-    print(predictor_list)
     predictor_matrix = read_multiple_varible_to_array(DATA_DIR, "combined_global_initial_v6.nc", predictor_list)
     
     
@@ -284,14 +283,14 @@ for seed, SETUP in enumerate(["PFT+CLIM+SOIL+AGE", "CLIM+SOIL+AGE"]):
     )
 
 
-    if not args.combined_training_and_development_set:
+    if not args.combined_training_and_development_sets:
     
         batch_mean = predictor_mean_df[predictor_list].loc[RUNS-1, :].values
 
         batch_std = predictor_std_df[predictor_list].loc[RUNS-1, :].values
     else: 
-        batch_mean = np.repeat(predictor_mean_df[predictor_list].loc[100, :].values[np.newaxis, :], 10, axis=0)
-        batch_std = np.repeat(predictor_std_df[predictor_list].loc[100, :].values[np.newaxis, :], 10, axis=0)
+        batch_mean = np.repeat(predictor_mean_df[predictor_list].loc[100, :].values[np.newaxis, :], len(RUNS), axis=0)
+        batch_std = np.repeat(predictor_std_df[predictor_list].loc[100, :].values[np.newaxis, :], len(RUNS), axis=0)
         
 
 
