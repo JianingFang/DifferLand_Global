@@ -53,6 +53,12 @@ parser.add_argument(
     "-e", "--ensemble_shap", action=argparse.BooleanOptionalAction, default=False
 )
 parser.add_argument(
+    "-p", "--pft", type=str, default="none"
+)
+parser.add_argument(
+    "-x", "--pft_purity_percentage_threshold", type=float, default=80.0
+)
+parser.add_argument(
     "-n", "--normalize", action=argparse.BooleanOptionalAction, default=False
 )
 parser.add_argument(
@@ -83,6 +89,9 @@ create_folder_if_not_exists(POSTANALYSIS_DIR)
 create_folder_if_not_exists(SHAP_DIR)
 
 args = parser.parse_args()
+
+if args.pft not in ["NF", "DBF", "EBF", "MF", "SH", "SAV", "GRA", "WET", "CRO", "NVG"]:
+    raise ValueError("--pft must be one of `none`, `NF`, `DBF`, `EBF`, `MF`, `SH`, `SAV`, `GRA`, `WET`, `CRO`, `NVG`, got {}".format(args.pft))
 
 if args.verbose:
     print("Now start computing shap values...")
@@ -276,6 +285,11 @@ ASSIMILATE_SHUFFLE_FLAG = ASSIMILATE_BULK_FLAG[not_nan_idx][shuffle_idx]
 sorted_valid_idx = VALID_IDX[shuffle_idx]
 predictor_matrix_shuffled = predictor_matrix[:, shuffle_idx]
 
+if args.pft != "none":
+    igbp_mask = read_variable_to_vector(DATA_DIR,  "combined_global_initial_v6.nc", args.pft) > args.pft_purity_percentage_threshold
+    igbp_mask = igbp_mask[shuffle_idx]
+    predictor_matrix_shuffled = predictor_matrix_shuffled[:, igbp_mask]
+
         
 subsampled_predictors = predictor_matrix_shuffled[:, np.random.randint(0, 
                                             predictor_matrix_shuffled.shape[1], size=1000)]
@@ -317,7 +331,10 @@ explainer = shap.KernelExplainer(predict_fun, X100)
 shap_values = explainer(X)
 
 
-save_fn = os.path.join("./postanalysis/shap/", f"{SETUP}_{VARIABLE_OF_INTEREST}_{"-".join([str(r) for r in RUNS])}_ensemble_shap.py")
-
+if args.pft =="none":  
+    save_fn = os.path.join("./postanalysis/shap/", f"{SETUP}_{VARIABLE_OF_INTEREST}_{"-".join([str(r) for r in RUNS])}_ensemble_shap.py")
+else:
+    save_fn = os.path.join("./postanalysis/shap/", f"{SETUP}_{VARIABLE_OF_INTEREST}_{args.pft}_{"-".join([str(r) for r in RUNS])}_ensemble_shap.py")
+    
 with open(save_fn, "wb") as f:
     pickle.dump(shap_values, f)
