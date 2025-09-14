@@ -1,7 +1,7 @@
 Evaluate Performance
 =================
 
-The script ``compute_performance.py`` is designed to evaluate DifferLand model
+The script ``evaluate_performance.py`` is designed to evaluate DifferLand model
 checkpoints after training. It loads saved neural network and DALEC parameters,
 computes performance metrics against observational constraints, and exports both
 latent parameters and simulated ecological variables for downstream analysis.
@@ -30,7 +30,7 @@ previous training run. For example:
 
 .. code-block:: bash
 
-   python compute_performance.py \
+   python evaluate_performance.py \
      --run 1 \
      --predictors PFT+CLIM+SOIL+AGE
 

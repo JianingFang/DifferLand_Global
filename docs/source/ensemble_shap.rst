@@ -76,7 +76,8 @@ target parameter for SHAP analysis. For example, to compute unconditioned relati
      --predictors CLIM+SOIL+AGE \
      --target canopy_efficiency
 
-Or to conditioned on a specific plant functional type:
+Or to condition on a specific plant functional type:
+
 .. code-block:: bash
 
    python compute_shap.py \
@@ -85,10 +86,9 @@ Or to conditioned on a specific plant functional type:
      --target canopy_efficiency \
      --pft GRA
 
-
 This will:
 
-1. Load the checkpoints for the specified members.  
-2. Build the ensemble-averaged model.  
-3. Compute SHAP values for the specified parameter.  
+1. Load the checkpoints for the specified members.
+2. Build the ensemble-averaged model.
+3. Compute SHAP values for the specified parameter.
 4. Save SHAP arrays in the corresponding directory. These can be later accessed to generate SHAP plots.

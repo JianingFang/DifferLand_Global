@@ -27,8 +27,8 @@ Set the paths in ``calibration.py``:
 
 .. code-block:: python
 
-   CARDAMOM_DRIVER_DATA_DIR = "/path/to/CARDAMOM_driver_data"
-   DATA_DIR = os.path.join(CARDAMOM_DRIVER_DATA_DIR, "global/")
+   DATA_DIR = "/path/to/CARDAMOM_driver_data"
+   DATA_DIR = os.path.join(DATA_DIR, "global/")
 
 Command-Line Options
 --------------------

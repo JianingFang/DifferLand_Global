@@ -40,11 +40,8 @@ Experiment Setup
    .. code-block:: bash
 
       conda install -c conda-forge jax numpy xarray pandas shap netCDF4 matplotlib cartopy scikit-learn
-      pip install optax tqdm
-
-   (Optional) If you also want to run the code in the Jupyter notebooks, make sure that 
-   Jupyter is installed in the environment.
+      pip install optax tqdm d
 
 3. Download the necessary driver files from the 
-   `Zenodo repository <https://zenodo.org/records/13984226?token=eyJhbGciOiJIUzUxMiJ9.eyJpZCI6Ijk0YzRlMWU5LTlhZTYtNDJjZS1hOWVlLTVhNmNiOGY3YjFiMiIsImRhdGEiOnt9LCJyYW5kb20iOiJjNTEzNDNjNzQwNzIzZDQ1NGFiZTVmYzUzYTc3YzIyYyJ9.94jiR53dHwvL0HKZxXY7qNjKiIai9MlslzUGU_8Rugti8sRMfBdCoyykN7ooPLPrqew7sG7yH2ec1kv7s8LAxQ>`_
+   `Zenodo repository <https://doi.org/10.5281/zenodo.13984225>`_
    and place them in the ``data/`` directory.

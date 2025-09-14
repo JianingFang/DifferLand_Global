@@ -80,7 +80,7 @@ POSTANALYSIS_DIR = "./postanalysis/"
 
 NC_DIR = "./postanalysis/nc/"
 SHAP_DIR = "./postanalysis/shap/"
-DATA_DIR = "/burg-archive/glab/users/jf3423/data/CARDAMOM_driver_data/global/"
+DATA_DIR = "../data/"
 predictor_mean_df = pd.read_csv(os.path.join(DATA_DIR, "predictor_mean_df_v6.csv"))
 predictor_std_df = pd.read_csv(os.path.join(DATA_DIR, "predictor_std_df_v6.csv")) 
    
@@ -261,7 +261,7 @@ for run in RUNS:
         param_state_list.append(param_state)
         
 # read in spatial predictors values
-predictor_matrix = read_multiple_varible_to_array(DATA_DIR, "combined_global_initial_v6.nc", predictor_list)
+predictor_matrix = read_multiple_varible_to_array(DATA_DIR, "differland_global_driver_v6.nc", predictor_list)
 
 
 RUN_SIMULATION_IDX = read_variable_to_vector(DATA_DIR, "run_simulation_idx_v6.nc", "run_simulation_idx", time_idx=60)
@@ -287,7 +287,7 @@ sorted_valid_idx = VALID_IDX[shuffle_idx]
 predictor_matrix_shuffled = predictor_matrix[:, shuffle_idx]
 
 if args.pft != "none":
-    igbp_mask = read_variable_to_vector(DATA_DIR,  "combined_global_initial_v6.nc", args.pft) > args.pft_purity_percentage_threshold
+    igbp_mask = read_variable_to_vector(DATA_DIR,  "differland_global_driver_v6.nc", args.pft) > args.pft_purity_percentage_threshold
     igbp_mask = igbp_mask[shuffle_idx]
     predictor_matrix_shuffled = predictor_matrix_shuffled[:, igbp_mask]
 

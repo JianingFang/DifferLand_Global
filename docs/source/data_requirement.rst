@@ -3,7 +3,7 @@ Data Requirements
 =================
 
 We provide example driver files at 
-`Zenodo <https://zenodo.org/records/13984226?token=eyJhbGciOiJIUzUxMiJ9.eyJpZCI6Ijk0YzRlMWU5LTlhZTYtNDJjZS1hOWVlLTVhNmNiOGY3YjFiMiIsImRhdGEiOnt9LCJyYW5kb20iOiJjNTEzNDNjNzQwNzIzZDQ1NGFiZTVmYzUzYTc3YzIyYyJ9.94jiR53dHwvL0HKZxXY7qNjKiIai9MlslzUGU_8Rugti8sRMfBdCoyykN7ooPLPrqew7sG7yH2ec1kv7s8LAxQ>`_.
+`Zenodo <https://doi.org/10.5281/zenodo.13984225>`_.
 
 To run DifferLand, the following input files are required:
 
@@ -25,6 +25,10 @@ To run DifferLand, the following input files are required:
 * *assimilate_bulk_variable_v6.nc*:
   Defines patches with sufficient vegetated land area for assimilation of 
   coarse-resolution variables.
+
+* *predictor_mean_v6.csv* and *predictor_std_v6.csv*:
+  Pre-computed mean and standard deviation of predictors for each training split,  
+  enabling fast normalization during SHAP computation.
 
 These files are sufficient to reproduce the training and evaluation experiments 
 described in the study.

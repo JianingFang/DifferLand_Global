@@ -6,7 +6,7 @@ This depository contains the source code for the DifferLand model described in t
 ## Repository Structure
 - `DifferLand/`: the source code of the DifferLand model.
 - `experiments/`: contains the scripts for training the model, saving the results, and computing test statistics and SHAP values.
-- `data/`: contains the drive files for running the DifferLand model and analyzing the results. To reproduce the results in the manuscript, you can download the driver files from the [Zenodo repository](https://zenodo.org/records/13984226?token=eyJhbGciOiJIUzUxMiJ9.eyJpZCI6Ijk0YzRlMWU5LTlhZTYtNDJjZS1hOWVlLTVhNmNiOGY3YjFiMiIsImRhdGEiOnt9LCJyYW5kb20iOiJjNTEzNDNjNzQwNzIzZDQ1NGFiZTVmYzUzYTc3YzIyYyJ9.94jiR53dHwvL0HKZxXY7qNjKiIai9MlslzUGU_8Rugti8sRMfBdCoyykN7ooPLPrqew7sG7yH2ec1kv7s8LAxQ) and place them in this directory.
+- `data/`: contains the drive files for running the DifferLand model and analyzing the results. To reproduce the results in the manuscript, you can download the driver files from the [Zenodo repository](https://doi.org/10.5281/zenodo.13984225) and place them in this directory.
 
 ## Installation
 1. Create a new conda environment and active the environment  
@@ -14,9 +14,9 @@ This depository contains the source code for the DifferLand model described in t
 `conda activate DifferLand`
 2. Install the packages that DifferLand depends on:  
 `conda install -c conda-forge jax numpy xarray pandas shap netCDF4 matplotlib cartopy scikit-learn`  
-`pip install fastkde optax tqdm`  
+`pip install optax tqdm`  
 
-3. Download the necessary driver files from the [Zenodo repository](https://zenodo.org/records/13984226?token=eyJhbGciOiJIUzUxMiJ9.eyJpZCI6Ijk0YzRlMWU5LTlhZTYtNDJjZS1hOWVlLTVhNmNiOGY3YjFiMiIsImRhdGEiOnt9LCJyYW5kb20iOiJjNTEzNDNjNzQwNzIzZDQ1NGFiZTVmYzUzYTc3YzIyYyJ9.94jiR53dHwvL0HKZxXY7qNjKiIai9MlslzUGU_8Rugti8sRMfBdCoyykN7ooPLPrqew7sG7yH2ec1kv7s8LAxQ) and place them in the `data\` directory.
+3. Download the necessary driver files from the [Zenodo repository](https://doi.org/10.5281/zenodo.13984225) and place them in the `data\` directory.
 
 
 ## Model Calibration
@@ -25,7 +25,7 @@ This depository contains the source code for the DifferLand model described in t
 For instance, if you want to calibrate the model with the full set of predictors ("PFT+CLIM+SOIL+AGE"), you can run the following command `python calibration.py -r 1 -p PFT+CLIM+SOIL+AGE` The training log will be stored in `experiments/log`, and the calibrated model parameters will be stored as a pickle file in `experiments/output` folder.  
 
 ## Compute Statistics and Analyze Results
-6. Compute test statistics and output .nc files of parameter maps and model output of simulated carbon and water fluxes. For instance, `python compute_performance.py -r 1 -p PFT+CLIM+SOIL+AGE`.
+6. Compute test statistics and output .nc files of parameter maps and model output of simulated carbon and water fluxes. For instance, `python evaluate_performance.py -r 1 -p PFT+CLIM+SOIL+AGE`.
 7. Compute SHAP values by running the script compute_shap.py 
 
 ## Reference

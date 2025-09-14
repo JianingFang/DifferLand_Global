@@ -105,12 +105,10 @@ if args.run < 1 or args.run > 100:
 run = args.run
 
 # define directories for accessing data and storing outputs
-CARDAMOM_DRIVER_DATA_DIR = "/burg/glab/users/jf3423/data/CARDAMOM_driver_data"
-DATA_DIR = os.path.join(CARDAMOM_DRIVER_DATA_DIR, "global/")
+DATA_DIR = "../data/"
 CO2_FILENAME = "co2_mm_gl_01_23.csv"
-DIFFERLAND_DRIVER_NAME = "combined_global_initial_v6.nc"
+DIFFERLAND_DRIVER_NAME = "differland_global_driver_v6.nc"
 
-#DATA_DIR = "../data/"
 OUTPUT_DIR = "./output/"
 LOG_DIR = "./log/"
 
