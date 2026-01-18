@@ -205,9 +205,7 @@ class DALEC993(DALECBase):
         # lai is diagnosed from prognostic foliar C pool
         lai = foliar_pool / LCMA
 
-        INVALID_BETA = -9999
-        # Eempirically determined scaling factor for water pool input
-        # to neural networks representing typical plant available water ranges.
+        INVALID_BETA = -9999.0  # placeholder value when beta is not computed
         WATER_POOL_SCALE = 1500  # empirically determined scaling factor for water pool input to neural networks representing typical plant available water ranges.
         GPP_SCALE = 8  # empirically determined scaling factor for GPP input to neural networks representing typical GPP ranges.
 
