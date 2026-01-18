@@ -206,8 +206,10 @@ class DALEC993(DALECBase):
         lai = foliar_pool / LCMA
 
         INVALID_BETA = -9999
-        WATER_POOL_SCALE = 1500
-        GPP_SCALE = 8
+        # Eempirically determined scaling factor for water pool input
+        # to neural networks representing typical plant available water ranges.
+        WATER_POOL_SCALE = 1500  # empirically determined scaling factor for water pool input to neural networks representing typical plant available water ranges.
+        GPP_SCALE = 8  # empirically determined scaling factor for GPP input to neural networks representing typical GPP ranges.
 
         # Various semi-empirical and hybrid-ML water stress functional forms for GPP and ET are defined here.
         # The global model currently uses the defualt configuration, which is sufficient in most cases at
