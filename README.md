@@ -29,7 +29,7 @@ For instance, if you want to calibrate the model with the full set of predictors
 7. Compute SHAP values by running the script compute_shap.py 
 
 ## Reference
-Fang, J., Bowman, K., Zhao, W., Lian, X., Gentine, P. (2024). Differentiable Land Model Reveals Global Environmental Controls on Latent Ecological Functions. *Nature Communications*. In Press.
+Fang, J., Bowman, K., Zhao, W., Lian, X., Gentine, P. (2026). Differentiable Land Model Reveals Global Environmental Controls on Latent Ecological Functions. *Nature Communications*. In Press.
 
 ## Related projects:
 In addition to the global model, we also have a [local DifferLand model](https://essopenarchive.org/users/747253/articles/1220863-exploring-optimal-complexity-for-water-stress-representation-in-terrestrial-carbon-models-a-hybrid-machine-learning-model-approach) suitable for site-level studies that can flexibly accommodate various machine learning based parameterizations. 
