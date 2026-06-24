@@ -376,14 +376,6 @@ logging.basicConfig(
     format="%(asctime)s %(message)s",
     datefmt="%m/%d/%Y %I:%M:%S %p",
 )
-
-if args.verbose:
-    print("Training complete!")
-    print(
-        "Calibrated parameters saved to: {}".format(
-            os.path.join("./{}/".format(OUTPUT_DIR), exp_str + ".pickle")
-        )
-    )
     
 loss_fn = partial(loss_fn_with_edc, batch_forward=batch_forward, pfn=model.pfn)
 
