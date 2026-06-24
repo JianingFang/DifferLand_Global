@@ -3,6 +3,8 @@ By Jianing Fang (jf3423@columbia.edu), last revised Jan 17, 2025.
 
 This depository contains the source code for the DifferLand model described in the manuscript "*Differentiable Land Model Reveals Global Environmental Controls on Latent Ecological Functions*." This README file walks you through the process of installing and running the DifferLand package. 
 
+**Update, 2026-06-03**: The stale example training checkpoint .pickle file has been replaced; this issue did not affect newly trained results.
+
 ## Repository Structure
 - `DifferLand/`: the source code of the DifferLand model.
 - `experiments/`: contains the scripts for training the model, saving the results, and computing test statistics and SHAP values.
